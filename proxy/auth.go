@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 	"net/http"
+	"net/url"
 	"proxy/abi"
 	"proxy/db"
 	"strconv"
@@ -41,12 +42,22 @@ func (c *NFTChecker) AuthOff() {
 }
 
 func (c *NFTChecker) NFTPassChecker(w http.ResponseWriter, r *http.Request) (string, error) {
-	if c.authOff{
+	if c.authOff {
+		m, err := url.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("url params %v\n", m)
 		return "", nil
 	}
-
-	address := r.Header.Get("address")
-	passTokenID := r.Header.Get("pass")
+	m, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return "", err
+	}
+	address := m.Get("address")
+	fmt.Println(address)
+	passTokenID := m.Get("pass")
+	fmt.Println(passTokenID)
 	channelId, err := strconv.ParseInt(passTokenID, 10, 64)
 	if err != nil {
 		return "", ParamsError
