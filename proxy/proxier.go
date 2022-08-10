@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -18,19 +17,24 @@ var (
 )
 
 const (
-	HeartbeatInterval   = time.Second * 40
+	HttpScheme = "http"
+	WSScheme   = "ws"
+)
+
+const (
+	HeartbeatInterval   = time.Second * 4
 	ReconnFirstInterval = time.Second * 5
 	MaxReconnInterval   = time.Hour
-	WriteWait           = time.Second * 10
-	PongWait            = time.Second * 60
+	WriteWait           = time.Second * 1
+	PongWait            = time.Second * 6
 )
 
 type Proxier struct {
-	targetHost          string
+	targetHost          string //http scheme
 	port                string
 	checker             *NFTChecker
-	hostList            []string
-	wsConns             map[string]*websocket.Conn
+	hostList            []string                   //ws scheme
+	wsConns             map[string]*websocket.Conn //ws scheme
 	heartbeatInterval   time.Duration
 	reconnFirstInterval time.Duration
 	maxReconnInterval   time.Duration
@@ -43,11 +47,9 @@ func NewProxy(hostList []string, port string, checker *NFTChecker) *Proxier {
 	if len(hostList) == 0 {
 		log.Fatal("host url list length 0")
 	}
-	return &Proxier{
-		targetHost:          hostList[0],
+	p := &Proxier{
 		port:                port,
 		checker:             checker,
-		hostList:            hostList,
 		wsConns:             make(map[string]*websocket.Conn),
 		heartbeatInterval:   HeartbeatInterval,
 		reconnFirstInterval: ReconnFirstInterval,
@@ -55,21 +57,27 @@ func NewProxy(hostList []string, port string, checker *NFTChecker) *Proxier {
 		writeWait:           WriteWait,
 		pongWait:            PongWait,
 	}
+	hostWsList := make([]string, len(hostList))
+	for i, hostUrl := range hostList {
+		hostWsList[i] = UrlToWs(hostUrl)
+	}
+	p.hostList = hostWsList
+	p.updateTarget(hostList[0])
+	return p
 }
 
 // ProxyRequestHandler handles the http request using proxy
 func (s *Proxier) ProxyRequestHandler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("host:", r.Host)
-		fmt.Println("url", r.URL.String())
 		_, err := s.checker.NFTPassChecker(w, r)
 		if err != nil {
 			log.Info("check nft pass error", err)
+			//todo: return some error code
 			return
 		}
 		urlParse, err := url.Parse(s.targetHost)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 			return
 		}
 		proxy := httputil.NewSingleHostReverseProxy(urlParse)
@@ -82,6 +90,7 @@ func (s *Proxier) start() {
 	address := "0.0.0.0:" + s.port
 	r := mux.NewRouter()
 	r.PathPrefix("/").HandlerFunc(s.ProxyRequestHandler())
+	go s.checkAlive()
 	go func() {
 		err := http.ListenAndServe(address, r)
 		if err != nil {
@@ -106,7 +115,6 @@ func (s *Proxier) checkAlive() {
 					conn.SetWriteDeadline(time.Now().Add(s.writeWait))
 					if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 						s.closeConn(hostUrl)
-						s.tryConn(hostUrl)
 					}
 				}
 			}
@@ -115,6 +123,7 @@ func (s *Proxier) checkAlive() {
 }
 
 func (s *Proxier) tryConn(url string) {
+	log.Info("try connect", url)
 	if _, ok := s.wsConns[url]; ok {
 		return
 	}
@@ -129,22 +138,30 @@ func (s *Proxier) tryConn(url string) {
 			}
 			continue
 		}
+		//c.SetReadDeadline(time.Now().Add(s.pongWait * 2))
+		c.SetPongHandler(func(string) error {
+			c.SetReadDeadline(time.Now().Add(s.pongWait))
+			return nil
+		})
 		go func() {
-			c.SetReadDeadline(time.Now().Add(s.pongWait * 2))
-			c.SetPongHandler(func(string) error {
-				c.SetReadDeadline(time.Now().Add(s.pongWait))
-				fmt.Println("got pong")
-				return nil
-			})
-			_, _, er := c.ReadMessage()
-			if er != nil {
-				if websocket.IsUnexpectedCloseError(er, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					fmt.Printf("error: %v\n", er)
-				}
+			defer func() {
 				s.closeConn(url)
+			}()
+			for {
+				_, _, er := c.ReadMessage()
+				if er != nil {
+					if websocket.IsUnexpectedCloseError(er, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					}
+					log.Error(er)
+					return
+				}
 			}
 		}()
 		s.wsConns[url] = c
+		if s.IfTargetEmpty() {
+			s.updateTarget(url)
+		}
+		log.Info("connected to", url)
 		return
 	}
 }
@@ -155,11 +172,33 @@ func (s *Proxier) closeConn(url string) {
 		conn.Close()
 		delete(s.wsConns, url)
 	}
-	if s.targetHost == url {
-		for _, nextHost := range s.hostList {
-			if _, ok := s.wsConns[nextHost]; ok {
-				s.targetHost = nextHost
+	log.Warn("host closed", url)
+	if UrlToWs(s.targetHost) == url {
+		s.setTargetEmpty()
+		for _, host := range s.hostList {
+			if _, ok := s.wsConns[host]; ok {
+				s.updateTarget(host)
+				break
 			}
 		}
+		if s.IfTargetEmpty() {
+			log.Error("no available target host")
+		}
 	}
+	go func() {
+		s.tryConn(url)
+	}()
+}
+
+func (s *Proxier) setTargetEmpty() {
+	s.targetHost = ""
+}
+
+func (s *Proxier) IfTargetEmpty() bool {
+	return s.targetHost == ""
+}
+
+func (s *Proxier) updateTarget(url string) {
+	s.targetHost = UrlToHttp(url)
+	log.Info("target host set", s.targetHost)
 }

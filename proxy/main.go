@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"gopkg.in/urfave/cli.v1"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	db2 "proxy/db"
+	"proxy/log"
 	"syscall"
 )
 
@@ -44,8 +47,13 @@ var (
 	}
 	targetHostFlag = cli.StringFlag{
 		Name:  "host",
-		Usage: "targe host",
+		Usage: "target host",
 		Value: "http://127.0.0.1:8080/",
+	}
+	configPathFlag = cli.StringFlag{
+		Name:  "config",
+		Usage: "config path",
+		Value: "./config.yml",
 	}
 )
 
@@ -75,29 +83,66 @@ var commandStart = cli.Command{
 		portFlag,
 		passContractFlag,
 		targetHostFlag,
+		configPathFlag,
 	},
 	Action: Start,
 }
 
+type ProxyConfig struct {
+	Port                string   `yaml:"port"`
+	DBIp                string   `yaml:"db_ip"`
+	ChainUrl            string   `yaml:"chain_url"`
+	PassContractAddress string   `yaml:"pass_contract_address"`
+	HostList            []string `yaml:"host_list"`
+	DBPass              string   `yaml:"db_pass"`
+}
+
 func Start(ctx *cli.Context) {
-	port := ctx.String(portFlag.Name)
-	dbIP := ctx.String(dbIPFlag.Name)
-	chainUrl := ctx.String(chainURLFlag.Name)
-	passAddressStr := ctx.String(passContractFlag.Name)
-	passContractAddress := common.HexToAddress(passAddressStr)
-	targetHost := ctx.String(targetHostFlag.Name)
-	db, err := db2.Init("", dbIP)
+	conf := loadConfig(ctx)
+	db, _ := db2.Init(conf.DBPass, conf.DBIp)
 	//if err != nil {
 	//	panic("db init error")
 	//}
-	checker := NewChecker(db, chainUrl, passContractAddress)
-	checker.AuthOff()
-	proxier, err := NewProxy(targetHost, port, checker)
-	if err != nil {
-		panic(err)
-	}
+	checker := NewChecker(db, conf.ChainUrl, common.HexToAddress(conf.PassContractAddress))
+	//checker.AuthOff()
+	proxier := NewProxy(conf.HostList, conf.Port, checker)
 	proxier.start()
 	waitToExit()
+}
+
+func loadConfig(ctx *cli.Context) ProxyConfig {
+	var proxyConfig ProxyConfig
+	if ctx.IsSet(configPathFlag.Name) {
+		configPath := ctx.String(configPathFlag.Name)
+		b, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			log.Fatal("read config error", err)
+		}
+		err = yaml.Unmarshal(b, &proxyConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	if ctx.IsSet(portFlag.Name) {
+		proxyConfig.Port = ctx.String(portFlag.Name)
+	}
+
+	if ctx.IsSet(dbIPFlag.Name) {
+		proxyConfig.DBIp = ctx.String(dbIPFlag.Name)
+	}
+
+	if ctx.IsSet(chainURLFlag.Name) {
+		proxyConfig.ChainUrl = ctx.String(chainURLFlag.Name)
+	}
+
+	if ctx.IsSet(passContractFlag.Name) {
+		proxyConfig.PassContractAddress = ctx.String(passContractFlag.Name)
+	}
+
+	if ctx.IsSet(targetHostFlag.Name) {
+		proxyConfig.HostList = []string{ctx.String(targetHostFlag.Name)}
+	}
+	return proxyConfig
 }
 
 func waitToExit() {

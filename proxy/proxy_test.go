@@ -9,14 +9,14 @@ import (
 
 func TestPingPong(t *testing.T) {
 	writeWait := time.Second * 1
-	pongWait := 5 * time.Second
-	pingPeriod := pongWait - 1
-	c, _, err := websocket.DefaultDialer.Dial("ws://localhost:1234", nil)
+	pongWait := 10 * time.Second
+	pingPeriod := 4 * time.Second
+	c, _, err := websocket.DefaultDialer.Dial("ws://localhost:3333", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ticker := time.NewTicker(pingPeriod)
-	timer := time.NewTimer(time.Second * 100)
+	timer := time.NewTimer(time.Second * 20)
 	go func() {
 		c.SetReadDeadline(time.Now().Add(pongWait))
 		c.SetPongHandler(func(string) error {
