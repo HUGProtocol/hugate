@@ -18,7 +18,7 @@ async function main() {
     const postURI = "127.0.0.1:8080/ipfs/QmT8Kq56RPj5qLDVbXGdrFg1spXpTPitrQyjJAWAhXzL6B?filename=post_test.json";
     const postTx = await postsContract.connect(Alice).post(postURI);
     await postTx.wait();
-    const getPostURI = await postsContract.connect(Bob).tokenURI(ethers.BigNumber.from(1).toHexString());
+    const getPostURI = await postsContract.connect(Bob).tokenURI(ethers.BigNumber.from(0).toHexString());
     console.log("post uri", getPostURI);
 }
 

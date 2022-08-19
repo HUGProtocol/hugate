@@ -3,6 +3,7 @@ module proxy
 go 1.16
 
 require (
+	github.com/calehh/emitter v0.0.0-20220818024547-36d741a98449
 	github.com/ethereum/go-ethereum v1.10.8
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/mux v1.8.0
