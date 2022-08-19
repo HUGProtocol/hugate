@@ -32,7 +32,7 @@ contract Posts is ERC721URIStorageUpgradeable, SolOwnable {
 
     function post(string memory tokenURI) public onlyOwner {
         uint256 newId = _tokenIds.current();
-        ERC721Upgradeable._mint(msg.sender, newId);
+        ERC721Upgradeable._safeMint(msg.sender, newId);
         _tokenIds.increment();
         ERC721URIStorageUpgradeable._setTokenURI(newId, tokenURI);
         emit NewPost(msg.sender, newId, tokenURI);

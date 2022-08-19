@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165StorageUpgradeable.sol";
 
-import "./utils/SolOwnable.sol";
+import "../utils/SolOwnable.sol";
 
 contract TestNft2 is ERC1155Upgradeable, SolOwnable, ERC165StorageUpgradeable {
 
