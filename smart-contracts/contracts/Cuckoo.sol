@@ -11,17 +11,19 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "./CoreFactory.sol";
+import "./interfaces/hooks/IUserProfile.sol";
 
 contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165StorageUpgradeable, CoreFactory {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Counters for Counters.Counter;
-
     struct ChannelBasic {
         address owner;
         uint256 price;
         uint256 passCount;
         address token;
     }
+
+    IUserProfile UserProfile;
 
     Counters.Counter private _tokenIds;
     Counters.Counter private _version;
@@ -86,8 +88,13 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         _version.increment();
     }
 
+    function updateUserProfile(address userProfile) public onlyOwner {
+        UserProfile = IUserProfile(userProfile);
+    }
+
     function addPublisher(address user) public onlyOwner {
         _publisher[user] = true;
+        UserProfile.toPublisher(user);
     }
 
     function revokePublisher(address user) public onlyOwner {

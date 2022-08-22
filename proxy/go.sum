@@ -70,8 +70,8 @@ github.com/btcsuite/snappy-go v0.0.0-20151229074030-0bdef8d06723/go.mod h1:8woku
 github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtEyQwv5/p4Mg4C0fgbePVuGr935/5ddU9Z3TmDRY=
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
 github.com/c-bata/go-prompt v0.2.2/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOCSiVIqS34=
-github.com/calehh/emitter v0.0.0-20220818024547-36d741a98449 h1:ShDDOFP4JCOsnyLICo8ThKcWz+qZcXhtwzpUhmqtMs8=
-github.com/calehh/emitter v0.0.0-20220818024547-36d741a98449/go.mod h1:ArCZsbS55QkCxw5JI4atJYLU2NXCiwM+zMXeM6U5aA0=
+github.com/calehh/emitter v0.0.0-20220822052100-9d7a8d2b6aba h1:pyKtEGQ66khiyjcwKyuDnrGpqoVry9Y5jOYO/gvCC5k=
+github.com/calehh/emitter v0.0.0-20220822052100-9d7a8d2b6aba/go.mod h1:ArCZsbS55QkCxw5JI4atJYLU2NXCiwM+zMXeM6U5aA0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/cp v0.1.0 h1:SE+dxFebS7Iik5LK0tsi1k9ZCxEaFX4AjQmoyA+1dJk=
 github.com/cespare/cp v0.1.0/go.mod h1:SOGHArjBr4JWaSDEVpWpo/hNg6RoKrls6Oh40hiwW+s=
