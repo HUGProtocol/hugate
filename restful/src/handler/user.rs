@@ -1,0 +1,208 @@
+use diesel::expression::ops::Add;
+use rand::Rng;
+use serde::__private::de;
+
+use crate::jwt::verify_login_signature;
+
+// use crate::handler::*;
+use super::*;
+
+#[derive(Serialize, Deserialize, FromForm)]
+#[allow(non_snake_case)]
+pub struct CreateProfileReq {
+    pub profileImage: String,
+    pub name: String,
+    pub email: String,
+    pub twitter: String,
+    pub about: String,
+}
+
+#[post("/createProfile", data = "<create_profile>")]
+pub fn create_profile(
+    conn: DbConn,
+    create_profile: LenientForm<CreateProfileReq>,
+) -> Json<HugResponse<OneLineResultBody>> {
+    Json(HugResponse::new_success())
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub struct UserInfoAbstract {
+    pub address: String,
+    pub userName: String,
+    pub profileImage: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub struct Medal {
+    pub id: i32,
+    pub name: String,
+    pub owner: String, //user address
+    pub image: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub struct UserInfoDetail {
+    pub address: String,
+    pub userName: String,
+    pub profileImage: String,
+    pub followersNum: i32,
+    pub followingNum: i32,
+    pub followersList: Vec<UserInfoAbstract>,
+    pub pts: u64,
+    pub medalNum: i32,
+    pub medalList: Vec<Medal>,
+    pub email: String,
+    pub twitter: String,
+    pub about: String,
+}
+
+pub struct Address(pub String);
+impl Default for Address {
+    fn default() -> Self {
+        Address("0x9C3739D43a89cedf167204550267797F5931ebF5".to_string())
+    }
+}
+impl Address {
+    pub fn random() -> Self {
+        const CHARSET: &[u8] = b"QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890";
+        let mut rng = rand::thread_rng();
+        let address: String = (0..40)
+            .map(|_| {
+                let idx = rng.gen_range(0..CHARSET.len());
+                CHARSET[idx] as char
+            })
+            .collect();
+        Address(address)
+    }
+}
+
+#[derive(Clone)]
+pub struct UserName(pub String);
+impl Default for UserName {
+    fn default() -> Self {
+        UserName("CaleHH".to_string())
+    }
+}
+impl UserName {
+    pub fn random() -> Self {
+        const CHARSET: &[u8] = b"QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890";
+        let mut rng = rand::thread_rng();
+        let username: String = (0..6)
+            .map(|_| {
+                let idx = rng.gen_range(0..CHARSET.len());
+                CHARSET[idx] as char
+            })
+            .collect();
+        UserName(username)
+    }
+}
+
+pub struct MedalList(Vec<Medal>);
+impl Default for MedalList {
+    fn default() -> Self {
+        MedalList(vec![
+            Medal {
+                id: 1,
+                name: "Punk".to_string(),
+                owner: Address::random().0,
+                image: "https://lh3.googleusercontent.com/fWqZfbuMuVvba6yxqAxl3dyxMNPvHiHXK2bqovdf7WnTD9tPNryphX7REIWFSlLam1x3gc7XJO0K1rkiSzn5_RcS=w600".to_string(),
+            },
+            Medal {
+                id: 2,
+                name: "Geek".into(),
+                owner: Address::random().0,
+                image: "https://lh3.googleusercontent.com/X2IBRGGUe6RBZgSGUl0umI2vDjxW7ionN7wdM_cy8mM5JCtzLUWfUiXxiYUkNQg4l-EMofuh-qrgO38gc36GSjpLeUp4ul7y9MRq=w600".to_string(),
+            },
+            Medal {
+                id: 3,
+                name: "Winner".to_string(),
+                owner: Address::random().0,
+                image: "https://lh3.googleusercontent.com/VPMI-SF8f-FX99wNP3rSmvGdSC9xcXHjUk-W2UgjB6smj-xf_KXdgUuZgP4QA6JvPmg8lYMQ0KCr4cWGSvaSKiK8gFVf8D4tJqwKdg=w600".to_string(),
+            },
+        ])
+    }
+}
+
+impl UserInfoDetail {
+    pub fn random() -> Self {
+        Self {
+            address: Address::random().0,
+            userName: UserName::random().0,
+            profileImage: "https://img.seadn.io/files/0507ede2bd1c13e5b2c99fa98ac3b085.png"
+                .to_string(),
+            followersNum: 10,
+            followingNum: 100,
+            followersList: Default::default(),
+            pts: 1000,
+            medalNum: 3,
+            medalList: MedalList::default().0,
+            email: format!("{}@gmail.com", UserName::random().0),
+            twitter: UserName::random().0,
+            about: "fly me to the moon".to_string(),
+        }
+    }
+}
+
+impl Default for UserInfoDetail {
+    fn default() -> Self {
+        Self {
+            address: Address::default().0,
+            userName: UserName::default().0,
+            profileImage: "https://img.seadn.io/files/0507ede2bd1c13e5b2c99fa98ac3b085.png"
+                .to_string(),
+            followersNum: 10,
+            followingNum: 100,
+            followersList: Default::default(),
+            pts: 1000,
+            medalNum: 3,
+            medalList: MedalList::default().0,
+            email: "calehh@gmail.com".to_string(),
+            twitter: "William".to_string(),
+            about: "fly me to the moon".to_string(),
+        }
+    }
+}
+
+#[get("/getUserInfo?<address>")]
+pub fn get_user_info(conn: DbConn, address: Option<String>) -> Json<HugResponse<UserInfoDetail>> {
+    // let mut res = HugResponse::new_success();
+    // res.resultBody = UserInfoDetail::default();
+    Json(HugResponse {
+        resultCode: 200,
+        resultMsg: "success".to_string(),
+        resultBody: UserInfoDetail::default(),
+    })
+}
+
+#[derive(Serialize, Deserialize, FromForm)]
+pub struct LoginReq {
+    pub address: String,
+    pub timestamp: u64,
+    pub sigType: String,
+    pub signature: String,
+}
+
+#[post("/login", data = "<login_req>")]
+pub fn login(
+    mut cookies: Cookies,
+    login_req: Form<LoginReq>,
+) -> Json<HugResponse<OneLineResultBody>> {
+    //todo verify signature
+    let res = verify_login_signature(
+        login_req.address.clone(),
+        login_req.timestamp,
+        login_req.signature.clone(),
+    );
+    if res.is_err() {
+        return Json(HugResponse::new_failed(
+            "verify signature failed",
+            res.err().unwrap().to_string().as_str(),
+        ));
+    }
+    let jwt = crate::jwt::jwt_generate(login_req.address.clone(), login_req.timestamp);
+    cookies.add(Cookie::new("jwt".to_string(), jwt));
+    Json(HugResponse::new_success())
+}
