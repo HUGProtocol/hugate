@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	db2 "proxy/db"
 	"proxy/log"
+	"proxy/restful"
 	"syscall"
 )
 
@@ -62,6 +63,7 @@ func init() {
 	app.Version = "v1.0.0"
 	app.Commands = []cli.Command{
 		commandStart,
+		commandFile,
 	}
 
 	cli.CommandHelpTemplate = OriginCommandHelpTemplate
@@ -86,6 +88,16 @@ var commandStart = cli.Command{
 		configPathFlag,
 	},
 	Action: Start,
+}
+
+var commandFile = cli.Command{
+	Name:  "file",
+	Usage: "start file server",
+	Flags: []cli.Flag{
+		dbIPFlag,
+		portFlag,
+	},
+	Action: FileServer,
 }
 
 type ProxyConfig struct {
@@ -143,6 +155,16 @@ func loadConfig(ctx *cli.Context) ProxyConfig {
 		proxyConfig.HostList = []string{ctx.String(targetHostFlag.Name)}
 	}
 	return proxyConfig
+}
+
+func FileServer(ctx *cli.Context) {
+	port := ctx.String(portFlag.Name)
+	rest := restful.InitRestService(port)
+	err := rest.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+	waitToExit()
 }
 
 func waitToExit() {
