@@ -1,59 +1,80 @@
 package restful
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	cluster_client "proxy/cluster-client"
+	"proxy/log"
 )
 
 type Resp struct {
-	Status int    `json:"status"`
-	Value  string `json:"value"`
+	ResultCode int         `json:"resultCode"`
+	ResultMsg  string      `json:"resultMsg"`
+	ResultBody interface{} `json:"resultBody"`
 }
 
 func (s *Service) Upload(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("File Upload Endpoint Hit")
+	rep := Resp{
+		ResultCode: 500,
+		ResultMsg:  "",
+		ResultBody: nil,
+	}
 
-	// Parse our multipart form, 10 << 20 specifies a maximum
-	// upload of 10 MB files.
-	r.ParseMultipartForm(10 << 20)
-	// FormFile returns the first file for the given key `myFile`
-	// it also returns the FileHeader so we can get the Filename,
-	// the Header and the size of the file
+	defer func() {
+		repStr, err := json.Marshal(&rep)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		_, err = w.Write(repStr)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	file, handler, err := r.FormFile("myFile")
 	if err != nil {
-		fmt.Println("Error Retrieving the File")
-		fmt.Println(err)
+		log.Error(err)
 		return
 	}
 	defer file.Close()
 	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
 	fmt.Printf("File Size: %+v\n", handler.Size)
 	fmt.Printf("MIME Header: %+v\n", handler.Header)
-
-	// Create a temporary file within our temp-images directory that follows
-	// a particular naming pattern
-	//tempFile, err := ioutil.TempFile("./temp-images", "upload-*.png")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//defer tempFile.Close()
-
-	// read all of the contents of our uploaded file into a
-	// byte array
+	tempFile, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	defer tempFile.Close()
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return
 	}
-	err = ioutil.WriteFile("./upload-"+handler.Filename, fileBytes, 0666)
+
+	_, err = tempFile.Write(fileBytes)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return
 	}
-	// write this byte array to our temporary file
-	//tempFile.Write(fileBytes)
-	// return that we have successfully uploaded our file!
-	fmt.Fprintf(w, "Successfully Uploaded File\n")
+
+	output, err := s.client.Add()
+	if err != nil {
+		log.Error(err)
+	}
+
+	rep.ResultMsg = "success"
+	rep.ResultCode = 200
+	type resp struct {
+		url string
+	}
+	rep.ResultBody = resp{url: fmt.Sprintf("%s/ipfs/%s", s.client.Url, output.Cid.String())}
 }

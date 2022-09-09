@@ -8,6 +8,8 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/ipfs-cluster/ipfs-cluster v1.0.2
+	github.com/multiformats/go-multiaddr v0.6.0
 	github.com/neo4j/neo4j-go-driver/v4 v4.4.4
 	gopkg.in/urfave/cli.v1 v1.20.0
 	gopkg.in/yaml.v2 v2.4.0
