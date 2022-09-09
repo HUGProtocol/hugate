@@ -5,13 +5,15 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gorilla/mux"
 	"net/http"
+	cluster_client "proxy/cluster-client"
 	"proxy/db"
 	"time"
 )
 
 type Service struct {
-	port string
-	db   *db.DBService
+	port   string
+	db     *db.DBService
+	client *cluster_client.ClusterClient
 }
 
 func InitRestService(port string) *Service {
@@ -25,7 +27,7 @@ func (c *Service) Start() error {
 	address := "0.0.0.0:" + c.port
 	r := mux.NewRouter()
 
-	r.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/profileImageUpload", func(w http.ResponseWriter, r *http.Request) {
 		c.Upload(w, r)
 	})
 
