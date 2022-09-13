@@ -74,6 +74,14 @@ var (
 		Name:  "headless_url",
 		Usage: "cluster name",
 	}
+	tmpDir = cli.StringFlag{
+		Name:  "tmp",
+		Usage: "tmp dir",
+	}
+	gatewayUrl = cli.StringFlag{
+		Name:  "gate",
+		Usage: "gate",
+	}
 )
 
 func init() {
@@ -117,6 +125,8 @@ var commandFile = cli.Command{
 		clusterUrlFlag,
 		clusterName,
 		headlessUrl,
+		tmpDir,
+		gatewayUrl,
 	},
 	Action: FileServer,
 }
@@ -180,13 +190,15 @@ func loadConfig(ctx *cli.Context) ProxyConfig {
 
 func FileServer(ctx *cli.Context) {
 	port := ctx.String(portFlag.Name)
-	if !(ctx.IsSet(clusterUrlFlag.Name) && ctx.IsSet(clusterName.Name) && ctx.IsSet(clusterPass.Name) && ctx.IsSet(headlessUrl.Name)) {
-		log.Fatal("cluster url unset")
+	if !(ctx.IsSet(clusterUrlFlag.Name) && ctx.IsSet(clusterName.Name) && ctx.IsSet(clusterPass.Name) && ctx.IsSet(headlessUrl.Name) && ctx.IsSet(tmpDir.Name) && ctx.IsSet(gatewayUrl.Name)) {
+		log.Fatal("flag unset")
 	}
 	clusterUrl := ctx.String(clusterUrlFlag.Name)
 	clusterNameStr := ctx.String(clusterName.Name)
 	clusterPassStr := ctx.String(clusterPass.Name)
 	chromeUrl := ctx.String(headlessUrl.Name)
+	cluster_client.DefaultTempFilePath = ctx.String(tmpDir.Name)
+	cluster_client.GatewayUrl = ctx.String(gatewayUrl.Name)
 
 	//init chrome agent
 	agent := snapshot.NewHeadlessAgent(chromeUrl)

@@ -31,11 +31,11 @@ func (c *Service) Start() error {
 	address := "0.0.0.0:" + c.port
 	r := mux.NewRouter()
 
-	r.HandleFunc("/profileImageUpload", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/fs/profileImageUpload", func(w http.ResponseWriter, r *http.Request) {
 		c.Upload(w, r)
 	})
 
-	r.HandleFunc("/getSnapshot", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/fs/getSnapshot", func(w http.ResponseWriter, r *http.Request) {
 		c.GetSnapshot(w, r)
 	})
 
