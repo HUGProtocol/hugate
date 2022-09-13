@@ -10,10 +10,9 @@ import (
 	"time"
 )
 
-const (
-	DefaultTempFilePath = "/Users/houmy/Documents/social/hugate/tmp/"
-	GatewayUrl          = "http://140.210.217.178:6137"
-)
+var DefaultTempFilePath = ""
+
+var GatewayUrl = ""
 
 type ClusterClient struct {
 	client     client.Client

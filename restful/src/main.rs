@@ -20,6 +20,10 @@ extern crate serde_derive;
 extern crate serde_json;
 
 use dotenv::dotenv;
+use handler::comments::{
+    static_rocket_route_info_for_del_comment, static_rocket_route_info_for_get_thought_comments,
+    static_rocket_route_info_for_thoughts_comment,
+};
 use handler::*;
 use std::env;
 use std::process::Command;
@@ -27,7 +31,6 @@ use std::process::Command;
 mod db;
 mod handler;
 mod jwt;
-mod model;
 mod models;
 mod schema;
 
@@ -35,13 +38,29 @@ fn rocket() -> rocket::Rocket {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("set DATABASE_URL");
-
+    println!("url : {}",database_url);
     let pool = db::init_pool(database_url);
     rocket::ignite()
         .manage(pool)
         .mount(
-            "/hug",
-            routes![user::create_profile, user::get_user_info, user::login,],
+            "/api/hug",
+            routes![
+                user::create_profile,
+                user::get_user_info,
+                user::login,
+                comments::get_thought_comments,
+                comments::thoughts_comment,
+                comments::del_comment,
+                follow::follow_or_not,
+                follow::get_follow_list,
+                medal::get_medal_list,
+                thoughts::get_popular_thoughts_list,
+                thoughts::get_my_thoughts_list,
+                thoughts::get_thought_detail,
+                thoughts::like_or_unlike_thought,
+                thoughts::reward,
+                thoughts::createThoughts,
+            ],
         )
         .register(catchers![not_found, miss_variable])
 }

@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/chromedp/chromedp"
 	"io/ioutil"
 	"log"
@@ -53,18 +54,22 @@ func (agent *HeadlessAgent) Start() {
 				lastCtx, cancel := chromedp.NewContext(remoteCtx, chromedp.WithLogf(log.Printf))
 				defer cancel()
 				var buf []byte
+				fmt.Println(21)
 				if err := chromedp.Run(lastCtx, fullScreenshot(direction, 90, &buf)); err != nil {
 					return err
 				}
+				fmt.Println(22)
 				if err := ioutil.WriteFile(filename, buf, 0644); err != nil {
 					return err
 				}
 				return nil
 			}
+			fmt.Println(23)
 			err := shot()
 			if err != nil {
 				log2.Error(err)
 			}
+			fmt.Println(24)
 			req.resp <- err
 		}
 	}()
@@ -74,14 +79,16 @@ func (agent *HeadlessAgent) ShotOne(direction string, filename string) error {
 	req := SnapShotReq{
 		filename:  filename,
 		direction: direction,
-		resp:      make(chan error),
+		resp:      make(chan error, 1),
 	}
 	ticker := time.NewTicker(time.Minute * 5)
 	select {
 	case agent.pending <- req:
+		fmt.Println(11)
 		err := <-req.resp
 		return err
 	case <-ticker.C:
+		fmt.Println(12)
 		return errors.New("headless chrome busy")
 	}
 }

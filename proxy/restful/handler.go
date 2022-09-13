@@ -88,6 +88,7 @@ func (s *Service) Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(1)
 	rep := Resp{
 		ResultCode: 500,
 		ResultMsg:  "",
@@ -105,7 +106,7 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 			log.Error(err)
 		}
 	}()
-
+	fmt.Println(2)
 	tempFile, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
 	if err != nil {
 		log.Error(err)
@@ -113,20 +114,21 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tempFile.Close()
 	defer os.Remove(tempFile.Name())
-
+	fmt.Println(3)
 	err = s.chrome.ShotOne(direction, tempFile.Name())
 	if err != nil {
 		log.Error(err)
 		return
 	}
-
+	fmt.Println(4)
 	output, err := s.client.Add(tempFile.Name())
 	if err != nil {
 		log.Error(err)
 		return
 	}
+	fmt.Println(5)
 	//sleep for added pic
-	time.Sleep(time.Second * 2)
+	//time.Sleep(time.Second * 2)
 	rep.ResultMsg = "success"
 	rep.ResultCode = 200
 	body := UrlBody{Url: fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, output.Cid.String())}

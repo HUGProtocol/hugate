@@ -2,12 +2,15 @@ use diesel::expression::ops::Add;
 use rand::Rng;
 use serde::__private::de;
 
-use crate::jwt::verify_login_signature;
+use crate::{
+    jwt::verify_login_signature,
+    models::users::{NewUser, Users},
+};
 
 // use crate::handler::*;
 use super::*;
 
-#[derive(Serialize, Deserialize, FromForm)]
+#[derive(Serialize, Deserialize, FromForm, Clone)]
 #[allow(non_snake_case)]
 pub struct CreateProfileReq {
     pub profileImage: String,
@@ -15,6 +18,7 @@ pub struct CreateProfileReq {
     pub email: String,
     pub twitter: String,
     pub about: String,
+    pub address: String,
 }
 
 #[post("/createProfile", data = "<create_profile>")]
@@ -22,15 +26,43 @@ pub fn create_profile(
     conn: DbConn,
     create_profile: LenientForm<CreateProfileReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
-    Json(HugResponse::new_success())
+    let res = Users::insert_user(
+        NewUser {
+            username: create_profile.name.clone(),
+            email: create_profile.email.clone(),
+            twitter: create_profile.twitter.clone(),
+            about: create_profile.about.clone(),
+            profile_image: create_profile.profileImage.clone(),
+            address: create_profile.address.clone(),
+            pts: 0,
+        },
+        &conn,
+    );
+    if res {
+        return Json(HugResponse::new_success());
+    }
+    Json(HugResponse::new_failed("insert into database failed", ""))
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Queryable, Debug)]
 #[allow(non_snake_case)]
 pub struct UserInfoAbstract {
     pub address: String,
-    pub userName: String,
-    pub profileImage: String,
+    #[serde(rename = "userName")]
+    pub username: String,
+    #[serde(rename = "profileImage")]
+    pub profile_image: String,
+}
+
+impl UserInfoAbstract {
+    pub fn random() -> Self {
+        let detail = UserInfoDetail::random();
+        return UserInfoAbstract {
+            address: detail.address,
+            username: detail.userName,
+            profile_image: detail.profileImage,
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -51,7 +83,7 @@ pub struct UserInfoDetail {
     pub followersNum: i32,
     pub followingNum: i32,
     pub followersList: Vec<UserInfoAbstract>,
-    pub pts: u64,
+    pub pts: i64,
     pub medalNum: i32,
     pub medalList: Vec<Medal>,
     pub email: String,
@@ -154,7 +186,7 @@ impl Default for UserInfoDetail {
             profileImage: "https://img.seadn.io/files/0507ede2bd1c13e5b2c99fa98ac3b085.png"
                 .to_string(),
             followersNum: 10,
-            followingNum: 100,
+            followingNum: 10,
             followersList: Default::default(),
             pts: 1000,
             medalNum: 3,
@@ -167,20 +199,58 @@ impl Default for UserInfoDetail {
 }
 
 #[get("/getUserInfo?<address>")]
-pub fn get_user_info(conn: DbConn, address: Option<String>) -> Json<HugResponse<UserInfoDetail>> {
-    // let mut res = HugResponse::new_success();
-    // res.resultBody = UserInfoDetail::default();
-    Json(HugResponse {
+pub fn get_user_info(conn: DbConn, address: String) -> Json<HugResponse<UserInfoDetail>> {
+    let res = Users::get_user_by_address(&conn, address.clone());
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "database connection failed".to_string(),
+            resultBody: UserInfoDetail::default(),
+        });
+    };
+    let user_vec = res.unwrap();
+    if user_vec.len() == 0 {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "user not exist".to_string(),
+            resultBody: UserInfoDetail::default(),
+        });
+    }
+    let mut user_info = UserInfoDetail::default();
+    let user_select = user_vec.get(0).unwrap();
+    user_info.address = user_select.address.clone();
+    user_info.userName = user_select.username.clone();
+    user_info.profileImage = user_select.profile_image.clone();
+    user_info.pts = user_select.pts.clone();
+    user_info.email = user_select.email.clone();
+    user_info.twitter = user_select.twitter.clone();
+    user_info.about = user_select.about.clone();
+
+    //get followers
+    let res = Users::get_user_by_followee(&conn, address.clone());
+    if res.is_ok() {
+        let followers = res.unwrap();
+        user_info.followersNum = followers.len() as i32;
+        user_info.followersList = followers;
+    }
+
+    // get following count
+    let res = Users::get_following_count(&conn, address.clone());
+    if res.is_ok() {
+        user_info.followingNum = res.unwrap() as i32;
+    }
+
+    return Json(HugResponse {
         resultCode: 200,
         resultMsg: "success".to_string(),
-        resultBody: UserInfoDetail::default(),
-    })
+        resultBody: user_info,
+    });
 }
 
 #[derive(Serialize, Deserialize, FromForm)]
 pub struct LoginReq {
     pub address: String,
-    pub timestamp: u64,
+    pub timestamp: i32,
     pub sigType: String,
     pub signature: String,
 }
@@ -190,19 +260,19 @@ pub fn login(
     mut cookies: Cookies,
     login_req: Form<LoginReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
-    //todo verify signature
-    let res = verify_login_signature(
-        login_req.address.clone(),
-        login_req.timestamp,
-        login_req.signature.clone(),
-    );
-    if res.is_err() {
-        return Json(HugResponse::new_failed(
-            "verify signature failed",
-            res.err().unwrap().to_string().as_str(),
-        ));
-    }
-    let jwt = crate::jwt::jwt_generate(login_req.address.clone(), login_req.timestamp);
+    //todo: verify signature
+    // let res = verify_login_signature(
+    //     login_req.address.clone(),
+    //     login_req.timestamp as u64,
+    //     login_req.signature.clone(),
+    // );
+    // if res.is_err() {
+    //     return Json(HugResponse::new_failed(
+    //         "verify signature failed",
+    //         res.err().unwrap().to_string().as_str(),
+    //     ));
+    // }
+    let jwt = crate::jwt::jwt_generate(login_req.address.clone(), login_req.timestamp as u64);
     cookies.add(Cookie::new("jwt".to_string(), jwt));
     Json(HugResponse::new_success())
 }
