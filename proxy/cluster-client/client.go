@@ -6,18 +6,19 @@ import (
 	"github.com/ipfs-cluster/ipfs-cluster/api"
 	"github.com/ipfs-cluster/ipfs-cluster/api/rest/client"
 	ma "github.com/multiformats/go-multiaddr"
+	"proxy/log"
 	"time"
 )
 
 const (
-	DefaultTempFilePath = "~/temp_file"
+	DefaultTempFilePath = "/Users/houmy/Documents/social/hugate/tmp/"
+	GatewayUrl          = "http://140.210.217.178:6137"
 )
 
 type ClusterClient struct {
 	client     client.Client
 	addTimeout time.Duration
-	path       []string
-	Url string
+	GatewayUrl string
 }
 
 func NewClusterClient(url, username, pass string) (*ClusterClient, error) {
@@ -34,22 +35,23 @@ func NewClusterClient(url, username, pass string) (*ClusterClient, error) {
 	}
 	return &ClusterClient{
 		client:     c,
-		addTimeout: time.Minute * 5,
-		path:       []string{DefaultTempFilePath},
+		addTimeout: time.Minute * 2,
+		GatewayUrl: GatewayUrl,
 	}, nil
 }
 
-func (c *ClusterClient) Add() (api.AddedOutput, error) {
+func (c *ClusterClient) Add(filename string) (api.AddedOutput, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.addTimeout)
 	defer cancel()
-	out := make(chan api.AddedOutput)
-	err := c.client.Add(ctx, c.path, api.DefaultAddParams(), out)
-	if err != nil {
-		return api.AddedOutput{}, err
-	}
-	timer := time.NewTimer(c.addTimeout)
+	out := make(chan api.AddedOutput, 1)
+	go func() {
+		err := c.client.Add(context.Background(), []string{filename}, api.DefaultAddParams(), out)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 	select {
-	case <-timer.C:
+	case <-ctx.Done():
 		return api.AddedOutput{}, errors.New("timeout")
 	case output := <-out:
 		return output, nil

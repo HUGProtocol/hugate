@@ -7,6 +7,7 @@ import (
 	"net/http"
 	cluster_client "proxy/cluster-client"
 	"proxy/db"
+	"proxy/snapshot"
 	"time"
 )
 
@@ -14,11 +15,14 @@ type Service struct {
 	port   string
 	db     *db.DBService
 	client *cluster_client.ClusterClient
+	chrome *snapshot.HeadlessAgent
 }
 
-func InitRestService(port string) *Service {
+func InitRestService(port string, client *cluster_client.ClusterClient, agent *snapshot.HeadlessAgent) *Service {
 	return &Service{
-		port: port,
+		port:   port,
+		client: client,
+		chrome: agent,
 	}
 }
 
@@ -29,6 +33,10 @@ func (c *Service) Start() error {
 
 	r.HandleFunc("/profileImageUpload", func(w http.ResponseWriter, r *http.Request) {
 		c.Upload(w, r)
+	})
+
+	r.HandleFunc("/getSnapshot", func(w http.ResponseWriter, r *http.Request) {
+		c.GetSnapshot(w, r)
 	})
 
 	go func() {
