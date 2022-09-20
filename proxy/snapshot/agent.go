@@ -103,6 +103,7 @@ func elementScreenshot(urlstr, sel string, res *[]byte) chromedp.Tasks {
 func fullScreenshot(urlstr string, quality int, res *[]byte) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(urlstr),
+		chromedp.Sleep(time.Second),
 		chromedp.FullScreenshot(res, quality),
 	}
 }
