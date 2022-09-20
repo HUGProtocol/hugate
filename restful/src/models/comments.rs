@@ -37,7 +37,7 @@ impl Comment {
 
     pub fn get_count_by_thought_id(conn: &PgConnection, thought_id: i32) -> Result<i64, Error> {
         all_comments
-            .filter(comment::id.eq(thought_id))
+            .filter(comment::thought_id.eq(thought_id))
             .count()
             .get_result(conn)
     }

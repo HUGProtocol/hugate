@@ -340,11 +340,17 @@ pub fn get_thought_detail(
     }
 
     let res = comments::Comment::get_count_by_thought_id(&conn, t.id);
-    if res.is_ok() {
+    if let Err(e) = res {
+        println!("{}", e);
+    } else {
         thought_detail.commentNum = res.unwrap() as i32;
     }
 
-    Json(HugResponse::new_success())
+    return Json(HugResponse {
+        resultCode: 200,
+        resultMsg: "success".to_string(),
+        resultBody: Some(thought_detail),
+    });
 }
 
 #[derive(FromForm)]
@@ -372,6 +378,7 @@ pub fn like_or_unlike_thought(
                 thought_id: like_req.thoughtId,
             },
         );
+        thoughts::Thoughts::add_like(&conn, like_req.thoughtId);
         if res {
             return Json(HugResponse::new_success());
         } else {
@@ -386,6 +393,7 @@ pub fn like_or_unlike_thought(
                 thought_id: like_req.thoughtId,
             },
         );
+        thoughts::Thoughts::reduce_unlike(&conn, like_req.thoughtId);
         if res {
             return Json(HugResponse::new_success());
         } else {

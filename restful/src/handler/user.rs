@@ -3,7 +3,7 @@ use rand::Rng;
 use serde::__private::de;
 
 use crate::{
-    jwt::verify_login_signature,
+    jwt::{verify_login_signature, check_cookies},
     models::users::{NewUser, Users},
 };
 
@@ -18,14 +18,20 @@ pub struct CreateProfileReq {
     pub email: String,
     pub twitter: String,
     pub about: String,
-    pub address: String,
 }
 
 #[post("/createProfile", data = "<create_profile>")]
 pub fn create_profile(
+    cookies:Cookies,
     conn: DbConn,
     create_profile: LenientForm<CreateProfileReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
+    let res = check_cookies(&cookies);
+    if res.is_err() {
+        return Json(HugResponse::new_failed("check token failed", ""));
+    }
+    let role = res.unwrap();
+    let address = role.address.clone();
     let res = Users::insert_user(
         NewUser {
             username: create_profile.name.clone(),
@@ -33,7 +39,7 @@ pub fn create_profile(
             twitter: create_profile.twitter.clone(),
             about: create_profile.about.clone(),
             profile_image: create_profile.profileImage.clone(),
-            address: create_profile.address.clone(),
+            address: address.clone(),
             pts: 0,
         },
         &conn,

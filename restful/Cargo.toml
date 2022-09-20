@@ -21,6 +21,7 @@ rand = "0.8.5"
 web3 = "0.18.0"
 hex = "0.4.3"
 chrono = "0.4.22"
+rocket_cors = "0.5.1"
 
 [dependencies.rocket_contrib]
 version = "*"

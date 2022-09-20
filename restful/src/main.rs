@@ -18,6 +18,8 @@ extern crate rocket_contrib;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+use rocket::http::Method;
+use rocket_cors::{AllowedHeaders, AllowedMethods, AllowedOrigins, Cors};
 
 use dotenv::dotenv;
 use handler::comments::{
@@ -34,11 +36,27 @@ mod jwt;
 mod models;
 mod schema;
 
+pub fn get_cors() -> Cors {
+    let allowed_origins = AllowedOrigins::all();
+    rocket_cors::CorsOptions {
+        allowed_origins: allowed_origins,
+        // allowed_methods: vec![Method::Get, Method::Post, Method::Options]
+        //     .into_iter()
+        //     .map(From::from)
+        //     .collect(),
+        allowed_headers: AllowedHeaders::All,
+        allow_credentials: true,
+        ..Default::default()
+    }
+    .to_cors()
+    .expect("cors config error")
+}
+
 fn rocket() -> rocket::Rocket {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("set DATABASE_URL");
-    println!("url : {}",database_url);
+    println!("url : {}", database_url);
     let pool = db::init_pool(database_url);
     rocket::ignite()
         .manage(pool)
@@ -62,6 +80,7 @@ fn rocket() -> rocket::Rocket {
                 thoughts::createThoughts,
             ],
         )
+        .attach(get_cors())
         .register(catchers![not_found, miss_variable])
 }
 
