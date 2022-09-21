@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	"io/ioutil"
 	"log"
@@ -12,9 +13,10 @@ import (
 )
 
 type SnapShotReq struct {
-	filename  string
-	direction string
-	resp      chan error
+	pic_filename  string
+	text_filename string
+	direction     string
+	resp          chan error
 }
 
 type HeadlessAgent struct {
@@ -33,7 +35,8 @@ func (agent *HeadlessAgent) Start() {
 	go func() {
 		for req := range agent.pending {
 			direction := req.direction
-			filename := req.filename
+			picFilename := req.pic_filename
+			textFilename := req.text_filename
 			shot := func() error {
 				log2.Info(direction)
 				wsUrl := agent.WsUrl
@@ -41,7 +44,7 @@ func (agent *HeadlessAgent) Start() {
 					chromedp.Flag("ignore-certificate-errors", true),
 				}
 				options = append(chromedp.DefaultExecAllocatorOptions[:], options...)
-				ctxTO, cancel := context.WithTimeout(context.Background(), time.Minute)
+				ctxTO, cancel := context.WithTimeout(context.Background(), time.Second*30)
 				defer cancel()
 				allocCtx, cancel := chromedp.NewExecAllocator(ctxTO, options...)
 				defer cancel()
@@ -55,11 +58,25 @@ func (agent *HeadlessAgent) Start() {
 				defer cancel()
 				var buf []byte
 				fmt.Println(21)
-				if err := chromedp.Run(lastCtx, fullScreenshot(direction, 90, &buf)); err != nil {
+				var res string
+				chromedp.Run(lastCtx,
+					chromedp.Navigate(direction),
+					chromedp.Sleep(time.Second),
+					chromedp.FullScreenshot(&buf, 90),
+					chromedp.ActionFunc(func(ctx context.Context) error {
+						node, err := dom.GetDocument().Do(ctx)
+						if err != nil {
+							return err
+						}
+						res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+						return err
+					}),
+				)
+				fmt.Println(22)
+				if err := ioutil.WriteFile(picFilename, buf, 0644); err != nil {
 					return err
 				}
-				fmt.Println(22)
-				if err := ioutil.WriteFile(filename, buf, 0644); err != nil {
+				if err := ioutil.WriteFile(textFilename, []byte(res), 0644); err != nil {
 					return err
 				}
 				return nil
@@ -75,11 +92,12 @@ func (agent *HeadlessAgent) Start() {
 	}()
 }
 
-func (agent *HeadlessAgent) ShotOne(direction string, filename string) error {
+func (agent *HeadlessAgent) ShotOne(direction string, pic_filename, text_filename string) error {
 	req := SnapShotReq{
-		filename:  filename,
-		direction: direction,
-		resp:      make(chan error, 1),
+		pic_filename:  pic_filename,
+		text_filename: text_filename,
+		direction:     direction,
+		resp:          make(chan error, 1),
 	}
 	ticker := time.NewTicker(time.Minute * 5)
 	select {
