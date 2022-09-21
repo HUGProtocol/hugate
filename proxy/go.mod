@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/calehh/emitter v0.0.0-20220822052100-9d7a8d2b6aba
+	github.com/chromedp/cdproto v0.0.0-20220827030233-358ed4af73cf
 	github.com/chromedp/chromedp v0.8.5
 	github.com/ethereum/go-ethereum v1.10.8
 	github.com/go-sql-driver/mysql v1.6.0

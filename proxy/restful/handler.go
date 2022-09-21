@@ -12,7 +12,8 @@ import (
 )
 
 type UrlBody struct {
-	Url string
+	Url  string
+	Html string
 }
 
 type Resp struct {
@@ -107,21 +108,34 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	fmt.Println(2)
-	tempFile, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
+	picTempFile, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	defer tempFile.Close()
-	defer os.Remove(tempFile.Name())
+	defer picTempFile.Close()
+	defer os.Remove(picTempFile.Name())
+	//
+	textTempFile, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	defer textTempFile.Close()
+	defer os.Remove(textTempFile.Name())
 	fmt.Println(3)
-	err = s.chrome.ShotOne(direction, tempFile.Name())
+	err = s.chrome.ShotOne(direction, picTempFile.Name(), textTempFile.Name())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	fmt.Println(4)
-	output, err := s.client.Add(tempFile.Name())
+	picOutput, err := s.client.Add(picTempFile.Name())
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	textOutput, err := s.client.Add(textTempFile.Name())
 	if err != nil {
 		log.Error(err)
 		return
@@ -131,7 +145,10 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 	//time.Sleep(time.Second * 2)
 	rep.ResultMsg = "success"
 	rep.ResultCode = 200
-	body := UrlBody{Url: fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, output.Cid.String())}
+	body := UrlBody{
+		Url:  fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, picOutput.Cid.String()),
+		Html: fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, textOutput.Cid.String()),
+	}
 	bodyJson, _ := json.Marshal(&body)
 	rep.ResultBody = string(bodyJson)
 }
