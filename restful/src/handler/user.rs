@@ -32,7 +32,7 @@ pub fn create_profile(
     }
     let role = res.unwrap();
     let address = role.address.clone();
-    let res = Users::insert_user(
+    let res = Users::insert_or_update_user(
         NewUser {
             username: create_profile.name.clone(),
             email: create_profile.email.clone(),
