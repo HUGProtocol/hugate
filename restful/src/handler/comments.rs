@@ -176,3 +176,18 @@ pub fn del_comment(
     }
     Json(HugResponse::new_success())
 }
+
+#[derive(FromForm)]
+#[allow(non_snake_case)]
+pub struct LikeOrUnlikeCommentReq {
+    pub commentId: i32,
+    pub operate: i32,
+}
+#[post("/likeOrUnlikeComment", data = "<like_req>")]
+pub fn like_or_unlike_comment(
+    cookies: Cookies,
+    conn: DbConn,
+    like_req: LenientForm<LikeOrUnlikeCommentReq>,
+) -> Json<HugResponse<OneLineResultBody>> {
+    Json(HugResponse::new_success())
+}

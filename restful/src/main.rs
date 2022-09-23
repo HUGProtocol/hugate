@@ -69,6 +69,7 @@ fn rocket() -> rocket::Rocket {
                 comments::get_thought_comments,
                 comments::thoughts_comment,
                 comments::del_comment,
+                comments::like_or_unlike_comment,
                 follow::follow_or_not,
                 follow::get_follow_list,
                 medal::get_medal_list,

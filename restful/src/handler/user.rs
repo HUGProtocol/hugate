@@ -3,7 +3,7 @@ use rand::Rng;
 use serde::__private::de;
 
 use crate::{
-    jwt::{verify_login_signature, check_cookies},
+    jwt::{check_cookies, verify_login_signature},
     models::users::{NewUser, Users},
 };
 
@@ -22,7 +22,7 @@ pub struct CreateProfileReq {
 
 #[post("/createProfile", data = "<create_profile>")]
 pub fn create_profile(
-    cookies:Cookies,
+    cookies: Cookies,
     conn: DbConn,
     create_profile: LenientForm<CreateProfileReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
@@ -261,11 +261,13 @@ pub struct LoginReq {
     pub signature: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct LoginRes {
+    pub JWT: String,
+}
+
 #[post("/login", data = "<login_req>")]
-pub fn login(
-    mut cookies: Cookies,
-    login_req: Form<LoginReq>,
-) -> Json<HugResponse<OneLineResultBody>> {
+pub fn login(mut cookies: Cookies, login_req: Form<LoginReq>) -> Json<HugResponse<LoginRes>> {
     //todo: verify signature
     // let res = verify_login_signature(
     //     login_req.address.clone(),
@@ -279,6 +281,10 @@ pub fn login(
     //     ));
     // }
     let jwt = crate::jwt::jwt_generate(login_req.address.clone(), login_req.timestamp as u64);
-    cookies.add(Cookie::new("jwt".to_string(), jwt));
-    Json(HugResponse::new_success())
+    cookies.add(Cookie::new("jwt".to_string(), jwt.clone()));
+    Json(HugResponse {
+        resultCode: 200,
+        resultMsg: "success".to_string(),
+        resultBody: LoginRes { JWT: jwt },
+    })
 }

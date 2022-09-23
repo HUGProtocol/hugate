@@ -1,5 +1,7 @@
 use std::ptr::null;
 
+use chrono::format;
+
 use super::{
     user::{Address, UserInfoDetail},
     *,
@@ -189,8 +191,9 @@ pub fn get_my_thoughts_list(
         address.clone(),
         my_thoughts_list_req.currentPage,
         my_thoughts_list_req.pageSize,
-        Some(my_thoughts_list_req.thought_type.clone()),
-        Some(my_thoughts_list_req.viewed.clone()),
+        //todo:
+        None,
+        None,
     );
 
     if res.is_err() {
@@ -285,7 +288,7 @@ pub fn get_thought_detail(
     if res.is_err() {
         return Json(HugResponse {
             resultCode: 500,
-            resultMsg: "check token failed".to_string(),
+            resultMsg: format!("{}", res.err().unwrap().to_string()),
             resultBody: None,
         });
     }
