@@ -4,6 +4,7 @@ use crate::schema::users::dsl::address;
 use crate::schema::users::dsl::users as all_users;
 use crate::schema::{self, follow, users};
 use chrono::NaiveDateTime;
+use diesel::pg::upsert::*;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
@@ -30,7 +31,7 @@ pub struct Users {
     pub address: String,
 }
 
-#[derive(Debug, Queryable, Insertable, Default)]
+#[derive(Debug, Queryable, Insertable, Default, AsChangeset)]
 #[table_name = "users"]
 pub struct NewUser {
     pub username: String,
@@ -52,6 +53,16 @@ pub struct NewFollow {
 impl Users {
     pub fn get_all_users(conn: &PgConnection) -> Result<Vec<Users>, Error> {
         all_users.order(users::id.desc()).load::<Users>(conn)
+    }
+
+    pub fn insert_or_update_user(user: NewUser, conn: &PgConnection) -> bool {
+        diesel::insert_into(users::table)
+            .values(&user)
+            .on_conflict(users::address)
+            .do_update()
+            .set(&user)
+            .execute(conn)
+            .is_ok()
     }
 
     pub fn insert_user(user: NewUser, conn: &PgConnection) -> bool {
