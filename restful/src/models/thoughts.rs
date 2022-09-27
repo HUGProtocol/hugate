@@ -24,6 +24,7 @@ pub struct Thoughts {
     pub likes: i64,
     pub viewed: String,
     pub submit_state: String,
+    pub html: String,
 }
 
 #[derive(Debug, Insertable)]
@@ -37,6 +38,7 @@ pub struct NewThought {
     pub snapshot: String,
     pub viewed: String,
     pub submit_state: String,
+    pub html: String,
 }
 
 impl Thoughts {

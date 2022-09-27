@@ -1,6 +1,6 @@
 use std::ptr::null;
 
-use chrono::format;
+use chrono::{format, NaiveDate, NaiveDateTime};
 
 use super::{
     user::{Address, UserInfoDetail},
@@ -23,11 +23,11 @@ pub struct GetPopularThoughtsListReq {
     pub pageSize: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 pub struct Thought {
     pub thought_id: i32,
     pub address: String,
-    pub userInfo: String,
+    pub userInfo: users::Users,
     pub tips: String,
     pub content: String,
     pub likeNum: i64,
@@ -36,6 +36,7 @@ pub struct Thought {
     pub thought_type: String,
     pub avatar: String,
     pub pts: i64,
+    pub comment_num: i64,
     pub sourceUrl: String,
 }
 
@@ -45,10 +46,8 @@ impl Default for Thought {
         Self {
             thought_id: 1,
             address: default_user.address,
-            userInfo: format!(
-                "email: {} twitter {}",
-                default_user.email, default_user.twitter
-            ),
+            // userInfo: users::Users { id: 12, username: "default".to_string(), profile_image: "default".to_string(), email: "default".to_string(), twitter: "default".to_string(), about: "default".to_string(), pts: 0, create_at: NaiveDateTime::default(), updated_at: NaiveDateTime::default(), address: "default".to_string() },
+            userInfo: users::Users::default(),
             tips: "First Image from NASA Webb Space Telescope".to_string(),
             content: "spaceship".to_string(),
             likeNum: 10,
@@ -58,6 +57,7 @@ impl Default for Thought {
             pts: 1000,
             sourceUrl: "https://medium.com/naaut/first-image-from-nasas-webb-5e691e5e16fc"
                 .to_string(),
+            comment_num: 0,
         }
     }
 }
@@ -73,7 +73,7 @@ impl ThoughtsList {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct GetPopularThoughtsListBody {
     pub thoughts: Vec<Thought>,
     pub total: u32,
@@ -135,10 +135,12 @@ pub fn get_popular_thoughts_list(
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
-                    x.avatar = us.profile_image.clone();
-                    x.pts = us.pts;
-                    x.userInfo = us.about.clone();
+                    x.userInfo = us.clone();
                 }
+            }
+            let res = comments::Comment::get_count_by_thought_id(&conn, y.id);
+            if res.is_ok() {
+                x.comment_num = res.unwrap();
             }
             x
         })
@@ -221,10 +223,12 @@ pub fn get_my_thoughts_list(
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
-                    x.avatar = us.profile_image.clone();
-                    x.pts = us.pts;
-                    x.userInfo = us.about.clone();
+                    x.userInfo = us.clone()
                 }
+            }
+            let res = comments::Comment::get_count_by_thought_id(&conn, y.id);
+            if res.is_ok() {
+                x.comment_num = res.unwrap();
             }
             x
         })
@@ -240,10 +244,11 @@ pub fn get_my_thoughts_list(
     })
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct ThoughtDetail {
     pub thought_id: i32,
     pub userName: String,
+    pub userInfo: users::Users,
     pub tips: String,
     pub content: String,
     pub likeNum: i64,
@@ -255,6 +260,7 @@ pub struct ThoughtDetail {
     pub commentNum: i32,
     pub snapshot: String,
     pub if_like: i32,
+    pub html: String,
 }
 
 impl Default for ThoughtDetail {
@@ -274,6 +280,8 @@ impl Default for ThoughtDetail {
             commentNum: 100,
             snapshot: t.pic,
             if_like: 0,
+            userInfo: users::Users::default(),
+            html: "".to_string(),
         }
     }
 }
@@ -319,6 +327,7 @@ pub fn get_thought_detail(
     thought_detail.snapshot = t.snapshot.clone();
     thought_detail.likeNum = t.likes;
     thought_detail.thought_id = t.id;
+    thought_detail.html = t.html.clone();
 
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
     if res.is_ok() {
@@ -326,6 +335,7 @@ pub fn get_thought_detail(
             thought_detail.userName = u.username.clone();
             thought_detail.avatar = u.profile_image.clone();
             thought_detail.pts = u.pts;
+            thought_detail.userInfo = u.clone();
         }
     }
 
@@ -433,6 +443,7 @@ pub struct CreateThoughtReq {
     submitState: String,
     #[form(field = "type")]
     thought_type: String,
+    html: String,
 }
 #[post("/createThoughts", data = "<req>")]
 pub fn createThoughts(
@@ -457,6 +468,7 @@ pub fn createThoughts(
             snapshot: req.snapshot.clone(),
             viewed: req.viewed.clone(),
             submit_state: req.submitState.clone(),
+            html: req.html.clone(),
         },
     );
     if res == false {
