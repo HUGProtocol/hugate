@@ -59,7 +59,7 @@ func (agent *HeadlessAgent) Start() {
 				var buf []byte
 				fmt.Println(21)
 				var res string
-				chromedp.Run(lastCtx,
+				err := chromedp.Run(lastCtx,
 					chromedp.Navigate(direction),
 					chromedp.Sleep(time.Second),
 					chromedp.FullScreenshot(&buf, 90),
@@ -72,6 +72,9 @@ func (agent *HeadlessAgent) Start() {
 						return err
 					}),
 				)
+				if err != nil {
+					return err
+				}
 				fmt.Println(22)
 				if err := ioutil.WriteFile(picFilename, buf, 0644); err != nil {
 					return err
