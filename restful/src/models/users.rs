@@ -17,7 +17,7 @@ pub struct UserProfile {
     pub first_name: String,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, Queryable, Serialize, Default, Clone)]
 pub struct Users {
     pub id: i32,
     pub username: String,
@@ -26,7 +26,9 @@ pub struct Users {
     pub twitter: String,
     pub about: String,
     pub pts: i64,
+    #[serde(skip_serializing)]
     pub create_at: NaiveDateTime,
+    #[serde(skip_serializing)]
     pub updated_at: NaiveDateTime,
     pub address: String,
 }

@@ -42,6 +42,7 @@ diesel::table! {
         likes -> Int8,
         viewed -> Varchar,
         submit_state -> Varchar,
+        html -> Varchar,
     }
 }
 
