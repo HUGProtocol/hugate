@@ -381,8 +381,8 @@ pub fn like_or_unlike_thought(
                 thought_id: like_req.thoughtId,
             },
         );
-        thoughts::Thoughts::add_like(&conn, like_req.thoughtId);
         if res {
+            thoughts::Thoughts::add_like(&conn, like_req.thoughtId);
             return Json(HugResponse::new_success());
         } else {
             return Json(HugResponse::new_failed("like failed", ""));
@@ -431,6 +431,8 @@ pub struct CreateThoughtReq {
     tips: String,
     viewed: String,
     submitState: String,
+    #[form(field = "type")]
+    thought_type: String,
 }
 #[post("/createThoughts", data = "<req>")]
 pub fn createThoughts(
@@ -450,7 +452,7 @@ pub fn createThoughts(
             content: req.thoughts_content.clone(),
             address: address.clone(),
             tips: req.tips.clone(),
-            thought_type: "web".to_string(),
+            thought_type: req.thought_type.clone(),
             source_url: req.sourceUrl.clone(),
             snapshot: req.snapshot.clone(),
             viewed: req.viewed.clone(),
