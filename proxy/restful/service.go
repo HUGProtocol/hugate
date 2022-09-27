@@ -40,7 +40,8 @@ func (c *Service) Start() error {
 	})
 
 	go func() {
-		err := http.ListenAndServe(address, r)
+		muxWithMiddlewares := http.TimeoutHandler(r, time.Second*30, "Timeout!")
+		err := http.ListenAndServe(address, muxWithMiddlewares)
 		if err != nil {
 			utils.Fatalf("http listen error", err)
 		}
