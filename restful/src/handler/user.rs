@@ -205,13 +205,28 @@ impl Default for UserInfoDetail {
 }
 
 #[get("/getUserInfo?<address>")]
-pub fn get_user_info(conn: DbConn, address: String) -> Json<HugResponse<UserInfoDetail>> {
+pub fn get_user_info(
+    cookies: Cookies,
+    conn: DbConn,
+    address: Option<String>,
+) -> Json<HugResponse<Option<UserInfoDetail>>> {
+    let res = check_cookies(&cookies);
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "check token failed".to_string(),
+            resultBody: None,
+        });
+    }
+    let role = res.unwrap();
+    let address = address.unwrap_or(role.address);
+    // let address = role.address.clone();
     let res = Users::get_user_by_address(&conn, address.clone());
     if res.is_err() {
         return Json(HugResponse {
             resultCode: 500,
             resultMsg: "database connection failed".to_string(),
-            resultBody: UserInfoDetail::default(),
+            resultBody: None,
         });
     };
     let user_vec = res.unwrap();
@@ -219,7 +234,7 @@ pub fn get_user_info(conn: DbConn, address: String) -> Json<HugResponse<UserInfo
         return Json(HugResponse {
             resultCode: 500,
             resultMsg: "user not exist".to_string(),
-            resultBody: UserInfoDetail::default(),
+            resultBody: None,
         });
     }
     let mut user_info = UserInfoDetail::default();
@@ -249,7 +264,7 @@ pub fn get_user_info(conn: DbConn, address: String) -> Json<HugResponse<UserInfo
     return Json(HugResponse {
         resultCode: 200,
         resultMsg: "success".to_string(),
-        resultBody: user_info,
+        resultBody: Some(user_info),
     });
 }
 
