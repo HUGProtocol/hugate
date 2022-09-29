@@ -39,6 +39,11 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         address indexed token
     );
 
+    event CreateChannelEvent(
+        address indexed owner,
+        uint256 tokenId
+    );
+
     event MintEvent(
         address indexed owner,
         uint256 tokenId,
@@ -110,9 +115,9 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
     }
 
     //init channel
-    function newChannel(string memory tokenURI, uint256 price, address payment) public onlyPublisher {
+    function newChannel(string memory tokenURI, uint256 price, address payment) public {
         //new channel token
-        require(payment != address(0));
+        // require(payment != address(0));
         uint256 newId = _tokenIds.current();
 
         ChannelBasic memory basic = ChannelBasic(msg.sender, price, 0, payment);
@@ -129,6 +134,7 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         //new channel contract
         address channelAddress = CoreFactory._createCon();
         channelProxy[newId] = channelAddress;
+        emit CreateChannelEvent(msg.sender, newId);
     }
 
     //update channel basic info
@@ -151,9 +157,9 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
     //Channel Subscriber
     /// ***********************
     function subscribeChannel(uint256 tokenId) public onlyChannelExist(tokenId) {
-        ChannelBasic memory basic = ChannelInfo[tokenId];
-        IERC20Upgradeable paymentToken = IERC20Upgradeable(basic.token);
-        paymentToken.safeTransferFrom(msg.sender, basic.owner, basic.price);
+        // ChannelBasic memory basic = ChannelInfo[tokenId];
+        // IERC20Upgradeable paymentToken = IERC20Upgradeable(basic.token);
+        // paymentToken.safeTransferFrom(msg.sender, basic.owner, basic.price);
         _mint(msg.sender, tokenId, 1, "");
     }
 
