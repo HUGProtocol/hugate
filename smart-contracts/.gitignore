@@ -2,7 +2,8 @@
 node_modules
 cache
 artifacts
-data
 abigen
 Log
 *.go
+.env
+.openzeppelin/
