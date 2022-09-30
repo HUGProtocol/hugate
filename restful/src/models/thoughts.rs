@@ -6,6 +6,7 @@ use crate::schema::thoughts::likes;
 use crate::schema::users::dsl::users as all_users;
 use crate::schema::{self, follow, thoughts, users};
 use chrono::NaiveDateTime;
+use diesel::dsl::not;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
@@ -50,16 +51,17 @@ impl Thoughts {
         address: Option<String>,
         submit_state: Option<String>,
     ) -> Result<(Vec<Thoughts>, i64), Error> {
-        let query = all_thoughts.order(thoughts::likes.desc());
+        let mut query = all_thoughts.order(thoughts::likes.desc()).into_boxed();
         if let Some(thought_type) = thought_type {
-            query.filter(thoughts::thought_type.eq(thought_type));
+            query = query.filter(thoughts::thought_type.eq(thought_type));
         }
         if let Some(address) = address {
-            query.filter(thoughts::thought_type.eq(address));
+            query = query.filter(thoughts::thought_type.eq(address));
         }
         if let Some(submit_state) = submit_state {
-            query.filter(thoughts::submit_state.eq(submit_state));
+            query = query.filter(thoughts::submit_state.eq(submit_state));
         }
+        query = query.filter(not(thoughts::viewed.eq("self")));
         let query_page = query.paginate(page).per_page(per_page);
         query_page.load_and_count_pages(conn)
     }
@@ -72,14 +74,14 @@ impl Thoughts {
         thought_type: Option<String>,
         viewed: Option<String>,
     ) -> Result<(Vec<Thoughts>, i64), Error> {
-        let query = all_thoughts.order(thoughts::id.desc());
+        let mut query = all_thoughts.order(thoughts::id.desc()).into_boxed();
         if let Some(viewed) = viewed {
-            query.filter(thoughts::viewed.eq(viewed));
+            query = query.filter(thoughts::viewed.eq(viewed));
         }
         if let Some(thought_type) = thought_type {
-            query.filter(thoughts::thought_type.eq(thought_type));
+            query = query.filter(thoughts::thought_type.eq(thought_type));
         }
-        query.filter(thoughts::address.eq(address));
+        query = query.filter(thoughts::address.eq(address));
         let query_page = query.paginate(page).per_page(per_page);
         query_page.load_and_count_pages(conn)
     }

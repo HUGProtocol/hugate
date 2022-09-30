@@ -188,14 +188,22 @@ pub fn get_my_thoughts_list(
         address = my_thoughts_list_req.address.clone();
     }
 
+    let mut thought_type = None;
+    if my_thoughts_list_req.thought_type != "" {
+        thought_type = Some(my_thoughts_list_req.thought_type.to_owned());
+    }
+
+    let mut viewed = None;
+    if my_thoughts_list_req.viewed != "" {
+        viewed = Some(my_thoughts_list_req.viewed.to_owned());
+    }
     let res = thoughts::Thoughts::get_my(
         &conn,
         address.clone(),
         my_thoughts_list_req.currentPage,
         my_thoughts_list_req.pageSize,
-        //todo:
-        None,
-        None,
+        thought_type,
+        viewed,
     );
 
     if res.is_err() {
@@ -261,6 +269,7 @@ pub struct ThoughtDetail {
     pub snapshot: String,
     pub if_like: i32,
     pub html: String,
+    pub twitter: String,
 }
 
 impl Default for ThoughtDetail {
@@ -282,6 +291,7 @@ impl Default for ThoughtDetail {
             if_like: 0,
             userInfo: users::Users::default(),
             html: "".to_string(),
+            twitter: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
 }
@@ -328,6 +338,9 @@ pub fn get_thought_detail(
     thought_detail.likeNum = t.likes;
     thought_detail.thought_id = t.id;
     thought_detail.html = t.html.clone();
+    if !t.source_url.contains("twitter") {
+        thought_detail.twitter = "".to_string();
+    }
 
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
     if res.is_ok() {
