@@ -109,6 +109,43 @@ impl Users {
         .is_ok()
     }
 
+    pub fn if_follow(follower: String, followee: String, conn: &PgConnection) -> bool {
+        let res: Result<i64, Error> = all_follows
+            .filter(follow::followee.eq(followee.clone()))
+            .filter(follow::follower.eq(follower.clone()))
+            .select(diesel::dsl::count(follow::dsl::id))
+            .first(conn);
+        if let Ok(cnt) = res {
+            println!(
+                "follower {} followee {} cnt {}",
+                follower.as_str(),
+                followee.as_str(),
+                cnt
+            );
+            if cnt > 0 {
+                return true;
+            }
+        }
+        return false;
+        // if let Ok(cnt) = all_follows
+        //     .filter(follow::followee.eq(followee.clone()))
+        //     .filter(follow::follower.eq(follower.clone()))
+        //     .count()
+        //     .get_result(conn)
+        // {
+        //     println!(
+        //         "follower {} followee {} cnt {}",
+        //         follower.as_str(),
+        //         followee.as_str(),
+        //         cnt
+        //     );
+        //     if cnt > 0 {
+        //         return true;
+        //     }
+        // }
+        // return false;
+    }
+
     //followers
     pub fn get_followers(
         conn: &PgConnection,
@@ -138,5 +175,29 @@ impl Users {
             .filter(follow::dsl::follower.eq(addr))
             .count()
             .get_result(conn)
+    }
+
+    pub fn update_pts(addr: String, conn: &PgConnection, pts: i64) -> bool {
+        diesel::update(schema::users::dsl::users)
+            .filter(schema::users::dsl::address.eq(addr))
+            .set(schema::users::dsl::pts.eq(pts))
+            .execute(conn)
+            .is_ok()
+    }
+
+    pub fn add_pts(addr: String, conn: &PgConnection, pts: i64) -> bool {
+        diesel::update(schema::users::dsl::users)
+            .filter(schema::users::dsl::address.eq(addr))
+            .set(schema::users::dsl::pts.eq(schema::users::dsl::pts + pts))
+            .execute(conn)
+            .is_ok()
+    }
+
+    pub fn reduce_pts(addr: String, conn: &PgConnection, pts: i64) -> bool {
+        diesel::update(schema::users::dsl::users)
+            .filter(schema::users::dsl::address.eq(addr))
+            .set(schema::users::dsl::pts.eq(schema::users::dsl::pts - pts))
+            .execute(conn)
+            .is_ok()
     }
 }

@@ -13,6 +13,7 @@ pub struct Comment {
     pub likeNum: i64,
     pub avatar: String,
     pub content: String,
+    pub if_like: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -35,6 +36,7 @@ impl getThoughtsCommentsBody {
                     likeNum: 10,
                     avatar: u.profileImage.clone(),
                     content: format!("{} said Hi", user_name.as_str()),
+                    if_like: 0,
                 }
             })
             .collect();
@@ -89,6 +91,18 @@ pub fn get_thought_comments(
                     x.avatar = us.profile_image.clone();
                     x.userName = us.username.clone();
                 }
+            }
+            if likes::Likes::if_like(
+                &conn,
+                likes::NewLike {
+                    address: address.clone(),
+                    thought_id: y.id,
+                },
+            ) {
+                x.if_like = 1;
+            }
+            if let Ok(like_num) = likes::Likes::count(&conn, y.id) {
+                x.likeNum = like_num;
             }
             x
         })
@@ -189,5 +203,39 @@ pub fn like_or_unlike_comment(
     conn: DbConn,
     like_req: LenientForm<LikeOrUnlikeCommentReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
-    Json(HugResponse::new_success())
+    let res = check_cookies(&cookies);
+    if res.is_err() {
+        return Json(HugResponse::new_failed("check token failed", ""));
+    }
+    let role = res.unwrap();
+    if like_req.operate == 1 {
+        let res = likes::Likes::like(
+            &conn,
+            likes::NewLike {
+                address: role.address,
+                thought_id: like_req.commentId,
+            },
+        );
+        if res {
+            return Json(HugResponse::new_success());
+        } else {
+            return Json(HugResponse::new_failed("like failed", ""));
+        }
+    }
+    if like_req.operate == 0 {
+        let res = likes::Likes::unlike(
+            &conn,
+            likes::NewLike {
+                address: role.address,
+                thought_id: like_req.commentId,
+            },
+        );
+        if res {
+            return Json(HugResponse::new_success());
+        } else {
+            return Json(HugResponse::new_failed("unlike failed", ""));
+        }
+    }
+
+    Json(HugResponse::new_failed("invalid operate code", ""))
 }

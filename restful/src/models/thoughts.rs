@@ -26,6 +26,7 @@ pub struct Thoughts {
     pub viewed: String,
     pub submit_state: String,
     pub html: String,
+    pub pts: i64,
 }
 
 #[derive(Debug, Insertable)]
@@ -111,6 +112,14 @@ impl Thoughts {
         diesel::update(thoughts::dsl::thoughts)
             .filter(thoughts::id.eq(thought_id))
             .set(thoughts::likes.eq(likes - 1))
+            .execute(conn)
+            .is_ok()
+    }
+
+    pub fn update_pts(conn: &PgConnection, thought_id: i32, pts: i64) -> bool {
+        diesel::update(thoughts::dsl::thoughts)
+            .filter(thoughts::id.eq(thought_id))
+            .set(thoughts::pts.eq(pts))
             .execute(conn)
             .is_ok()
     }

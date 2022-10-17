@@ -43,6 +43,7 @@ diesel::table! {
         viewed -> Varchar,
         submit_state -> Varchar,
         html -> Varchar,
+        pts -> Int8,
     }
 }
 
