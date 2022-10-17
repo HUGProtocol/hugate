@@ -29,7 +29,7 @@ pub struct Thoughts {
     pub pts: i64,
 }
 
-#[derive(Debug, Insertable)]
+#[derive(Debug, Insertable, AsChangeset)]
 #[table_name = "thoughts"]
 pub struct NewThought {
     pub content: String,
@@ -74,6 +74,7 @@ impl Thoughts {
         per_page: i64,
         thought_type: Option<String>,
         viewed: Option<String>,
+        state: Option<String>,
     ) -> Result<(Vec<Thoughts>, i64), Error> {
         let mut query = all_thoughts.order(thoughts::id.desc()).into_boxed();
         if let Some(viewed) = viewed {
@@ -81,6 +82,9 @@ impl Thoughts {
         }
         if let Some(thought_type) = thought_type {
             query = query.filter(thoughts::thought_type.eq(thought_type));
+        }
+        if let Some(submit_state) = state {
+            query = query.filter(thoughts::submit_state.eq(submit_state));
         }
         query = query.filter(thoughts::address.eq(address));
         let query_page = query.paginate(page).per_page(per_page);
@@ -97,6 +101,14 @@ impl Thoughts {
     pub fn create(conn: &PgConnection, new_thought: NewThought) -> bool {
         diesel::insert_into(thoughts::table)
             .values(&new_thought)
+            .execute(conn)
+            .is_ok()
+    }
+
+    pub fn update(conn: &PgConnection, new_thought: NewThought, thought_id: i32) -> bool {
+        diesel::update(thoughts::dsl::thoughts)
+            .filter(thoughts::id.eq(thought_id))
+            .set(&new_thought)
             .execute(conn)
             .is_ok()
     }

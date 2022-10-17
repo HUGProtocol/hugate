@@ -198,6 +198,10 @@ pub fn get_my_thoughts_list(
     if my_thoughts_list_req.viewed != "" {
         viewed = Some(my_thoughts_list_req.viewed.to_owned());
     }
+    let mut submit_state = Some(my_thoughts_list_req.state.clone());
+    if my_thoughts_list_req.state == "" {
+        submit_state = None;
+    }
     let res = thoughts::Thoughts::get_my(
         &conn,
         address.clone(),
@@ -205,6 +209,7 @@ pub fn get_my_thoughts_list(
         my_thoughts_list_req.pageSize,
         thought_type,
         viewed,
+        submit_state,
     );
 
     if res.is_err() {
@@ -521,6 +526,7 @@ pub struct CreateThoughtReq {
     #[form(field = "type")]
     thought_type: String,
     html: String,
+    thought_id_op: Option<i32>,
 }
 #[post("/createThoughts", data = "<req>")]
 pub fn createThoughts(
@@ -534,20 +540,37 @@ pub fn createThoughts(
     }
     let role = res.unwrap();
     let address = role.address.clone();
-    let res = thoughts::Thoughts::create(
-        &conn,
-        thoughts::NewThought {
-            content: req.thoughts_content.clone(),
-            address: address.clone(),
-            tips: req.tips.clone(),
-            thought_type: req.thought_type.clone(),
-            source_url: req.sourceUrl.clone(),
-            snapshot: req.snapshot.clone(),
-            viewed: req.viewed.clone(),
-            submit_state: req.submitState.clone(),
-            html: req.html.clone(),
-        },
-    );
+    let new_thought = thoughts::NewThought {
+        content: req.thoughts_content.clone(),
+        address: address.clone(),
+        tips: req.tips.clone(),
+        thought_type: req.thought_type.clone(),
+        source_url: req.sourceUrl.clone(),
+        snapshot: req.snapshot.clone(),
+        viewed: req.viewed.clone(),
+        submit_state: req.submitState.clone(),
+        html: req.html.clone(),
+    };
+    if let Some(thought_id) = req.thought_id_op {
+        if thought_id != 0 {
+            let res = thoughts::Thoughts::get_by_id(&conn, thought_id);
+            if res.is_err() {
+                return Json(HugResponse::new_failed("no such thought", ""));
+            }
+
+            match res.unwrap().get(0) {
+                None => return Json(HugResponse::new_failed("no such thought", "")),
+                Some(t) => {
+                    if t.address != address {
+                        return Json(HugResponse::new_failed("not thought owner", ""));
+                    }
+                    thoughts::Thoughts::update(&conn, new_thought, thought_id);
+                }
+            }
+            return Json(HugResponse::new_success());
+        }
+    }
+    let res = thoughts::Thoughts::create(&conn, new_thought);
     if res == false {
         return Json(HugResponse::new_failed("create thought failed", ""));
     }
