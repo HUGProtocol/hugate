@@ -38,6 +38,7 @@ pub struct Thought {
     pub pts: i64,
     pub comment_num: i64,
     pub sourceUrl: String,
+    pub embeded: String,
 }
 
 impl Default for Thought {
@@ -58,6 +59,7 @@ impl Default for Thought {
             sourceUrl: "https://medium.com/naaut/first-image-from-nasas-webb-5e691e5e16fc"
                 .to_string(),
             comment_num: 0,
+            embeded:r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
 }
@@ -133,6 +135,9 @@ pub fn get_popular_thoughts_list(
             x.thought_type = y.thought_type.clone();
             x.sourceUrl = y.source_url.clone();
             x.pts = y.pts;
+            if !x.sourceUrl.contains("twitter") {
+                x.embeded = "".to_string();
+            }
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -235,6 +240,9 @@ pub fn get_my_thoughts_list(
             x.sourceUrl = y.source_url.clone();
             x.thought_id = y.id;
             x.pts = y.pts;
+            if !x.sourceUrl.contains("twitter") {
+                x.embeded = "".to_string();
+            }
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -276,7 +284,7 @@ pub struct ThoughtDetail {
     pub snapshot: String,
     pub if_like: i32,
     pub html: String,
-    pub twitter: String,
+    pub embeded: String,
 }
 
 impl Default for ThoughtDetail {
@@ -298,7 +306,7 @@ impl Default for ThoughtDetail {
             if_like: 0,
             userInfo: users::Users::default(),
             html: "".to_string(),
-            twitter: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
+            embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
 }
@@ -347,7 +355,7 @@ pub fn get_thought_detail(
     thought_detail.html = t.html.clone();
     thought_detail.pts = t.pts;
     if !t.source_url.contains("twitter") {
-        thought_detail.twitter = "".to_string();
+        thought_detail.embeded = "".to_string();
     }
 
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
