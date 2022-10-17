@@ -40,7 +40,7 @@ pub fn create_profile(
             about: create_profile.about.clone(),
             profile_image: create_profile.profileImage.clone(),
             address: address.clone(),
-            pts: 0,
+            pts: 1000,
         },
         &conn,
     );
@@ -89,12 +89,14 @@ pub struct UserInfoDetail {
     pub followersNum: i32,
     pub followingNum: i32,
     pub followersList: Vec<UserInfoAbstract>,
+    pub followingList: Vec<UserInfoAbstract>,
     pub pts: i64,
     pub medalNum: i32,
     pub medalList: Vec<Medal>,
     pub email: String,
     pub twitter: String,
     pub about: String,
+    pub if_follow: i32,
 }
 
 pub struct Address(pub String);
@@ -174,12 +176,14 @@ impl UserInfoDetail {
             followersNum: 10,
             followingNum: 100,
             followersList: Default::default(),
+            followingList: Default::default(),
             pts: 1000,
             medalNum: 3,
             medalList: MedalList::default().0,
             email: format!("{}@gmail.com", UserName::random().0),
             twitter: UserName::random().0,
             about: "fly me to the moon".to_string(),
+            if_follow: 0,
         }
     }
 }
@@ -194,12 +198,14 @@ impl Default for UserInfoDetail {
             followersNum: 10,
             followingNum: 10,
             followersList: Default::default(),
+            followingList: Default::default(),
             pts: 1000,
             medalNum: 3,
             medalList: MedalList::default().0,
             email: "calehh@gmail.com".to_string(),
             twitter: "William".to_string(),
             about: "fly me to the moon".to_string(),
+            if_follow: 0,
         }
     }
 }
@@ -219,8 +225,7 @@ pub fn get_user_info(
         });
     }
     let role = res.unwrap();
-    let address = address.unwrap_or(role.address);
-    // let address = role.address.clone();
+    let address = address.unwrap_or(role.address.clone());
     let res = Users::get_user_by_address(&conn, address.clone());
     if res.is_err() {
         return Json(HugResponse {
@@ -255,10 +260,23 @@ pub fn get_user_info(
         user_info.followersList = followers;
     }
 
-    // get following count
-    let res = Users::get_following_count(&conn, address.clone());
+    //get followees
+    let res = Users::get_followees(&conn, address.clone());
     if res.is_ok() {
-        user_info.followingNum = res.unwrap() as i32;
+        let followees = res.unwrap();
+        user_info.followingNum = followees.len() as i32;
+        user_info.followingList = followees;
+    }
+
+    // // get following count
+    // let res = Users::get_following_count(&conn, address.clone());
+    // if res.is_ok() {
+    //     user_info.followingNum = res.unwrap() as i32;
+    // }
+
+    //check if follow
+    if Users::if_follow(role.address.clone(), address.clone(), &conn) {
+        user_info.if_follow = 1;
     }
 
     return Json(HugResponse {

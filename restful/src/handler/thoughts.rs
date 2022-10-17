@@ -6,7 +6,7 @@ use super::{
     user::{Address, UserInfoDetail},
     *,
 };
-use crate::handler::*;
+use crate::{handler::*, models};
 use crate::{jwt::check_cookies, models::users};
 use crate::{
     models::{comments, likes, thoughts},
@@ -54,7 +54,7 @@ impl Default for Thought {
             pic: "https://miro.medium.com/max/1400/1*OEnUxTYQaNxBSnXGpnpr5g.jpeg".to_string(),
             thought_type: "web".to_string(),
             avatar: default_user.profileImage,
-            pts: 1000,
+            pts: 0,
             sourceUrl: "https://medium.com/naaut/first-image-from-nasas-webb-5e691e5e16fc"
                 .to_string(),
             comment_num: 0,
@@ -132,6 +132,7 @@ pub fn get_popular_thoughts_list(
             x.pic = y.snapshot.clone();
             x.thought_type = y.thought_type.clone();
             x.sourceUrl = y.source_url.clone();
+            x.pts = y.pts;
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -228,6 +229,7 @@ pub fn get_my_thoughts_list(
             x.thought_type = y.thought_type.clone();
             x.sourceUrl = y.source_url.clone();
             x.thought_id = y.id;
+            x.pts = y.pts;
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -284,7 +286,7 @@ impl Default for ThoughtDetail {
             likeNum: t.likeNum as i64,
             thought_type: t.thought_type,
             avatar: u.profileImage,
-            pts: t.pts as i64,
+            pts: 0,
             sourceUrl: t.sourceUrl,
             commentNum: 100,
             snapshot: t.pic,
@@ -338,6 +340,7 @@ pub fn get_thought_detail(
     thought_detail.likeNum = t.likes;
     thought_detail.thought_id = t.id;
     thought_detail.html = t.html.clone();
+    thought_detail.pts = t.pts;
     if !t.source_url.contains("twitter") {
         thought_detail.twitter = "".to_string();
     }
@@ -347,7 +350,6 @@ pub fn get_thought_detail(
         if let Some(u) = res.unwrap().get(0) {
             thought_detail.userName = u.username.clone();
             thought_detail.avatar = u.profile_image.clone();
-            thought_detail.pts = u.pts;
             thought_detail.userInfo = u.clone();
         }
     }
@@ -438,9 +440,71 @@ pub struct RewardReq {
 
 #[post("/reward", data = "<reward_req>")]
 pub fn reward(
-    db_conn: DbConn,
+    cookies: Cookies,
+    conn: DbConn,
     reward_req: Form<RewardReq>,
-) -> Json<HugResponse<OneLineResultBody>> {
+) -> Json<HugResponse<Option<OneLineResultBody>>> {
+    //check cookies
+    let res = check_cookies(&cookies);
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "check token failed".to_string(),
+            resultBody: None,
+        });
+    }
+    let role = res.unwrap();
+    let mut address = role.address.clone();
+    let res = models::users::Users::get_user_by_address(&conn, address.clone());
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "user not found".to_string(),
+            resultBody: None,
+        });
+    }
+    if let Ok(ref user_list) = res {
+        if user_list.is_empty() {
+            return Json(HugResponse {
+                resultCode: 500,
+                resultMsg: "user not found".to_string(),
+                resultBody: None,
+            });
+        }
+    }
+    let user_info = res.unwrap().get(0).unwrap().clone();
+    if user_info.pts < reward_req.ptsNum as i64 {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "pts not enough".to_string(),
+            resultBody: None,
+        });
+    }
+    let res = thoughts::Thoughts::get_by_id(&conn, reward_req.thoughtId);
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: format!("no such thought id {}", reward_req.thoughtId).to_string(),
+            resultBody: None,
+        });
+    }
+    if let Ok(list) = res {
+        if list.is_empty() {
+            return Json(HugResponse {
+                resultCode: 500,
+                resultMsg: format!("no such thought id {}", reward_req.thoughtId).to_string(),
+                resultBody: None,
+            });
+        }
+        let thought = list.get(0).unwrap();
+        thoughts::Thoughts::update_pts(
+            &conn,
+            reward_req.thoughtId,
+            thought.pts + reward_req.ptsNum as i64,
+        );
+        users::Users::reduce_pts(address.clone(), &conn, reward_req.ptsNum as i64);
+        users::Users::add_pts(thought.address.clone(), &conn, reward_req.ptsNum as i64);
+    }
     Json(HugResponse::new_success())
 }
 
