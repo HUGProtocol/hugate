@@ -4,13 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"io/ioutil"
 	"log"
 	log2 "proxy/log"
+	"sync"
 	"time"
 )
+
+var SingleFileSnapshotTimeout = 30 * time.Second
 
 type SnapShotReq struct {
 	pic_filename  string
@@ -58,19 +63,19 @@ func (agent *HeadlessAgent) Start() {
 				defer cancel()
 				var buf []byte
 				fmt.Println(21)
-				var res string
+				//var res string
 				err := chromedp.Run(lastCtx,
 					chromedp.Navigate(direction),
 					chromedp.Sleep(time.Second),
 					chromedp.FullScreenshot(&buf, 90),
-					chromedp.ActionFunc(func(ctx context.Context) error {
-						node, err := dom.GetDocument().Do(ctx)
-						if err != nil {
-							return err
-						}
-						res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-						return err
-					}),
+					//chromedp.ActionFunc(func(ctx context.Context) error {
+					//	node, err := dom.GetDocument().Do(ctx)
+					//	if err != nil {
+					//		return err
+					//	}
+					//	res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+					//	return err
+					//}),
 				)
 				if err != nil {
 					return err
@@ -79,20 +84,90 @@ func (agent *HeadlessAgent) Start() {
 				if err := ioutil.WriteFile(picFilename, buf, 0644); err != nil {
 					return err
 				}
-				if err := ioutil.WriteFile(textFilename, []byte(res), 0644); err != nil {
-					return err
-				}
+				//if err := ioutil.WriteFile(textFilename, []byte(res), 0644); err != nil {
+				//	return err
+				//}
 				return nil
 			}
 			fmt.Println(23)
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func() {
+				singleFileErr := SingleFileSnapshot(direction, textFilename)
+				if singleFileErr != nil {
+					log2.Error("singlefile snapshot error", singleFileErr)
+				}
+				wg.Done()
+			}()
 			err := shot()
 			if err != nil {
 				log2.Error(err)
 			}
 			fmt.Println(24)
+			wg.Wait()
 			req.resp <- err
 		}
 	}()
+}
+
+func SingleFileSnapshot(url string, htmlFileName string) error {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+
+	resp, err := cli.ContainerCreate(ctx, &container.Config{
+		Image: "singlefile",
+		Cmd:   []string{url},
+	}, nil, nil, nil, "")
+	if err != nil {
+		return err
+	}
+
+	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+		return err
+	}
+
+	defer func() {
+		timeout := time.Duration(0)
+		e := cli.ContainerStop(ctx, resp.ID, &timeout)
+		if e != nil {
+			log2.Error("stop container error", resp.ID, e)
+		}
+		e = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
+		if e != nil {
+			log2.Error("remove container error", resp.ID, e)
+		}
+		cli.Close()
+	}()
+
+	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	timer := time.NewTimer(SingleFileSnapshotTimeout)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			panic(err)
+		}
+	case <-timer.C:
+		return errors.New("timeout")
+	case <-statusCh:
+	}
+
+	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	if err != nil {
+		return err
+	}
+
+	buf, err := ioutil.ReadAll(out)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(htmlFileName, buf, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (agent *HeadlessAgent) ShotOne(direction string, pic_filename, text_filename string) error {
