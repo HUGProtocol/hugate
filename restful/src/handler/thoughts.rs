@@ -12,6 +12,7 @@ use crate::{
     models::{comments, likes, thoughts},
     schema::comment,
 };
+use curl::easy::Easy;
 
 #[derive(FromForm)]
 #[allow(non_snake_case)]
@@ -59,7 +60,8 @@ impl Default for Thought {
             sourceUrl: "https://medium.com/naaut/first-image-from-nasas-webb-5e691e5e16fc"
                 .to_string(),
             comment_num: 0,
-            embeded:r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
+            embeded: "".to_string(),
+            // embeded:r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
 }
@@ -135,8 +137,12 @@ pub fn get_popular_thoughts_list(
             x.thought_type = y.thought_type.clone();
             x.sourceUrl = y.source_url.clone();
             x.pts = y.pts;
-            if !x.sourceUrl.contains("twitter") {
-                x.embeded = "".to_string();
+            if x.sourceUrl.contains("twitter") {
+                if let Some(embeded) = curl_twitter(x.sourceUrl.clone()) {
+                    if let Ok(s) = std::str::from_utf8(&embeded) {
+                        x.embeded = s.to_string();
+                    }
+                }
             }
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
@@ -240,8 +246,12 @@ pub fn get_my_thoughts_list(
             x.sourceUrl = y.source_url.clone();
             x.thought_id = y.id;
             x.pts = y.pts;
-            if !x.sourceUrl.contains("twitter") {
-                x.embeded = "".to_string();
+            if x.sourceUrl.contains("twitter") {
+                if let Some(embeded) = curl_twitter(x.sourceUrl.clone()) {
+                    if let Ok(s) = std::str::from_utf8(&embeded) {
+                        x.embeded = s.to_string();
+                    }
+                }
             }
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
@@ -306,7 +316,8 @@ impl Default for ThoughtDetail {
             if_like: 0,
             userInfo: users::Users::default(),
             html: "".to_string(),
-            embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
+            embeded: "".to_string(),
+            // embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
 }
@@ -354,8 +365,12 @@ pub fn get_thought_detail(
     thought_detail.thought_id = t.id;
     thought_detail.html = t.html.clone();
     thought_detail.pts = t.pts;
-    if !t.source_url.contains("twitter") {
-        thought_detail.embeded = "".to_string();
+    if t.source_url.contains("twitter") {
+        if let Some(embeded) = curl_twitter(t.source_url.clone()) {
+            if let Ok(s) = std::str::from_utf8(&embeded) {
+                thought_detail.embeded = s.to_string();
+            }
+        }
     }
 
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
@@ -585,18 +600,30 @@ pub fn createThoughts(
     Json(HugResponse::new_success())
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_req() {
-        let url = r#"https://publish.twitter.com/oembed?url=https://twitter.com/Interior/status/463440424141459456"#;
-        // let url = r"https://weibo.com";
-        let res = easy_http_request::DefaultHttpRequest::get_from_url_str(url)
-            .unwrap()
-            .send();
-        match res {
-            Err(e) => println!(" embeded err {}", e),
-            Ok(resp) => println!("embeded body {}", String::from_utf8(resp.body).unwrap()),
+fn curl_twitter(url: String) -> Option<Vec<u8>> {
+    let mut embeded_url = r#"https://publish.twitter.com/oembed?url="#.to_string();
+    embeded_url += &url;
+    let mut easy = Easy::new();
+    let res = easy.url(&embeded_url);
+    if res.is_err() {
+        return None;
+    }
+    let mut dst = Vec::new();
+    {
+        let mut transfer = easy.transfer();
+        let res = transfer.write_function(|data| {
+            dst.extend_from_slice(data);
+            Ok(data.len())
+        });
+        if res.is_err() {
+            return None;
+        }
+        let res = transfer.perform();
+        if res.is_err() {
+            return None;
         }
     }
+    // let s = std::str::from_utf8(dst.as_ref());
+    // println!("{:?}", s);
+    Some(dst)
 }
