@@ -584,3 +584,19 @@ pub fn createThoughts(
     }
     Json(HugResponse::new_success())
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_req() {
+        let url = r#"https://publish.twitter.com/oembed?url=https://twitter.com/Interior/status/463440424141459456"#;
+        // let url = r"https://weibo.com";
+        let res = easy_http_request::DefaultHttpRequest::get_from_url_str(url)
+            .unwrap()
+            .send();
+        match res {
+            Err(e) => println!(" embeded err {}", e),
+            Ok(resp) => println!("embeded body {}", String::from_utf8(resp.body).unwrap()),
+        }
+    }
+}
