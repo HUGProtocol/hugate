@@ -84,12 +84,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "antidote"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34fde25430d87a9388dadbe6e34d7f72a462c8b43ac8d309b42b0a8505d7e2a5"
-
-[[package]]
 name = "arrayvec"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -238,12 +232,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "concat-with"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fa9470dfc0c6272faf8d8395c1bb73f3b8c9b88c80b4f11081874e03d8de07e"
-
-[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -329,6 +317,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb4a30d54f7443bf3d6191dcd486aca19e67cb3c49fa7a06a319966346707e7f"
 dependencies = [
  "cipher",
+]
+
+[[package]]
+name = "curl"
+version = "0.4.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "509bd11746c7ac09ebd19f0b17782eae80aadee26237658a6b4808afb5c11a22"
+dependencies = [
+ "curl-sys",
+ "libc",
+ "openssl-probe",
+ "openssl-sys",
+ "schannel",
+ "socket2",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "curl-sys"
+version = "0.4.56+curl-7.83.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6093e169dd4de29e468fa649fbae11cdcd5551c81fe5bf1b0677adad7ef3d26f"
+dependencies = [
+ "cc",
+ "libc",
+ "libz-sys",
+ "openssl-sys",
+ "pkg-config",
+ "vcpkg",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -436,52 +454,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "easy-http-request"
-version = "0.2.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a74eb774cbc4c23f7808bb8fbba015a014634ca60dff559928492bf211f9b3d4"
-dependencies = [
- "educe",
- "hyper 0.10.16",
- "hyper-native-tls",
- "mime 0.3.16",
- "slash-formatter",
- "url 1.7.2",
-]
-
-[[package]]
-name = "educe"
-version = "0.4.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c07b7cc9cd8c08d10db74fca3b20949b9b6199725c04a0cce6d543496098fcac"
-dependencies = [
- "enum-ordinalize",
- "proc-macro2 1.0.43",
- "quote 1.0.21",
- "syn 1.0.99",
-]
-
-[[package]]
 name = "encoding_rs"
 version = "0.8.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9852635589dc9f9ea1b6fe9f05b50ef208c85c834a562f0c6abb1c475736ec2b"
 dependencies = [
  "cfg-if 1.0.0",
-]
-
-[[package]]
-name = "enum-ordinalize"
-version = "3.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2170fc0efee383079a8bdd05d6ea2a184d2a0f07a1c1dcabdb2fd5e9f24bc36c"
-dependencies = [
- "num-bigint",
- "num-traits",
- "proc-macro2 1.0.43",
- "quote 1.0.21",
- "rustc_version",
- "syn 1.0.99",
 ]
 
 [[package]]
@@ -887,10 +865,10 @@ name = "hug_rest"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "curl",
  "custom_derive",
  "diesel",
  "dotenv",
- "easy-http-request",
  "hex",
  "jsonwebtoken",
  "r2d2",
@@ -947,17 +925,6 @@ dependencies = [
  "tower-service",
  "tracing",
  "want",
-]
-
-[[package]]
-name = "hyper-native-tls"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d375598f442742b0e66208ee12501391f1c7ac0bafb90b4fe53018f81f06068"
-dependencies = [
- "antidote",
- "hyper 0.10.16",
- "native-tls",
 ]
 
 [[package]]
@@ -1184,6 +1151,18 @@ name = "libc"
 version = "0.2.132"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8371e4e5341c3a96db127eb2465ac681ced4c433e01dd0e938adbef26ba93ba5"
+
+[[package]]
+name = "libz-sys"
+version = "1.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9702761c3935f8cc2f101793272e202c72b99da8f4224a19ddcf1279a6450bbf"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
+]
 
 [[package]]
 name = "lock_api"
@@ -2150,15 +2129,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "slash-formatter"
-version = "3.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2357a79da8d4684e6aff22929e6f18ee07d0326fbc765da318d5395261aa1ffb"
-dependencies = [
- "concat-with",
 ]
 
 [[package]]
