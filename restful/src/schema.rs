@@ -44,6 +44,7 @@ diesel::table! {
         submit_state -> Varchar,
         html -> Varchar,
         pts -> Int8,
+        embeded -> Varchar,
     }
 }
 

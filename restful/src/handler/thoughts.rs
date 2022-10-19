@@ -137,13 +137,7 @@ pub fn get_popular_thoughts_list(
             x.thought_type = y.thought_type.clone();
             x.sourceUrl = y.source_url.clone();
             x.pts = y.pts;
-            if x.sourceUrl.contains("twitter") {
-                if let Some(embeded) = curl_twitter(x.sourceUrl.clone()) {
-                    if let Ok(s) = std::str::from_utf8(&embeded) {
-                        x.embeded = s.to_string();
-                    }
-                }
-            }
+            x.embeded = y.embeded.clone();
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -246,13 +240,7 @@ pub fn get_my_thoughts_list(
             x.sourceUrl = y.source_url.clone();
             x.thought_id = y.id;
             x.pts = y.pts;
-            if x.sourceUrl.contains("twitter") {
-                if let Some(embeded) = curl_twitter(x.sourceUrl.clone()) {
-                    if let Ok(s) = std::str::from_utf8(&embeded) {
-                        x.embeded = s.to_string();
-                    }
-                }
-            }
+            x.embeded = y.embeded.clone();
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -365,13 +353,7 @@ pub fn get_thought_detail(
     thought_detail.thought_id = t.id;
     thought_detail.html = t.html.clone();
     thought_detail.pts = t.pts;
-    if t.source_url.contains("twitter") {
-        if let Some(embeded) = curl_twitter(t.source_url.clone()) {
-            if let Ok(s) = std::str::from_utf8(&embeded) {
-                thought_detail.embeded = s.to_string();
-            }
-        }
-    }
+    thought_detail.embeded = t.embeded.clone();
 
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
     if res.is_ok() {
@@ -563,7 +545,7 @@ pub fn createThoughts(
     }
     let role = res.unwrap();
     let address = role.address.clone();
-    let new_thought = thoughts::NewThought {
+    let mut new_thought = thoughts::NewThought {
         content: req.thoughts_content.clone(),
         address: address.clone(),
         tips: req.tips.clone(),
@@ -573,6 +555,7 @@ pub fn createThoughts(
         viewed: req.viewed.clone(),
         submit_state: req.submitState.clone(),
         html: req.html.clone(),
+        embeded: "".to_string(),
     };
     if let Some(thought_id) = req.thought_id_op {
         if thought_id != 0 {
@@ -587,10 +570,26 @@ pub fn createThoughts(
                     if t.address != address {
                         return Json(HugResponse::new_failed("not thought owner", ""));
                     }
+                    if t.source_url != new_thought.source_url {
+                        if new_thought.source_url.contains("twitter") {
+                            if let Some(embeded) = curl_twitter(new_thought.source_url.clone()) {
+                                if let Ok(s) = std::str::from_utf8(&embeded) {
+                                    new_thought.embeded = s.to_string();
+                                }
+                            }
+                        }
+                    }
                     thoughts::Thoughts::update(&conn, new_thought, thought_id);
                 }
             }
             return Json(HugResponse::new_success());
+        }
+    }
+    if new_thought.source_url.contains("twitter") {
+        if let Some(embeded) = curl_twitter(new_thought.source_url.clone()) {
+            if let Ok(s) = std::str::from_utf8(&embeded) {
+                new_thought.embeded = s.to_string();
+            }
         }
     }
     let res = thoughts::Thoughts::create(&conn, new_thought);
@@ -600,7 +599,7 @@ pub fn createThoughts(
     Json(HugResponse::new_success())
 }
 
-fn curl_twitter(url: String) -> Option<Vec<u8>> {
+pub fn curl_twitter(url: String) -> Option<Vec<u8>> {
     let mut embeded_url = r#"https://publish.twitter.com/oembed?url="#.to_string();
     embeded_url += &url;
     let mut easy = Easy::new();
