@@ -209,9 +209,9 @@ pub fn get_my_thoughts_list(
     if my_thoughts_list_req.viewed != "" {
         viewed = Some(my_thoughts_list_req.viewed.to_owned());
     }
-    let mut submit_state = Some(my_thoughts_list_req.state.clone());
-    if my_thoughts_list_req.state == "" {
-        submit_state = None;
+    let mut submit_state = None;
+    if my_thoughts_list_req.state != "" {
+        submit_state = Some(my_thoughts_list_req.state.clone());
     }
     let res = thoughts::Thoughts::get_my(
         &conn,
