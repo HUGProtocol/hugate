@@ -60,6 +60,7 @@ diesel::table! {
         create_at -> Timestamptz,
         updated_at -> Timestamptz,
         address -> Varchar,
+        banner -> Varchar,
     }
 }
 
