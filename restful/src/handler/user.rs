@@ -18,6 +18,7 @@ pub struct CreateProfileReq {
     pub email: String,
     pub twitter: String,
     pub about: String,
+    pub banner: Option<String>,
 }
 
 #[post("/createProfile", data = "<create_profile>")]
@@ -41,6 +42,7 @@ pub fn create_profile(
             profile_image: create_profile.profileImage.clone(),
             address: address.clone(),
             pts: 1000,
+            banner: create_profile.banner.clone().unwrap_or_default(),
         },
         &conn,
     );
@@ -97,6 +99,7 @@ pub struct UserInfoDetail {
     pub twitter: String,
     pub about: String,
     pub if_follow: i32,
+    pub banner: String,
 }
 
 pub struct Address(pub String);
@@ -184,6 +187,7 @@ impl UserInfoDetail {
             twitter: UserName::random().0,
             about: "fly me to the moon".to_string(),
             if_follow: 0,
+            banner: "".to_string(),
         }
     }
 }
@@ -206,6 +210,7 @@ impl Default for UserInfoDetail {
             twitter: "William".to_string(),
             about: "fly me to the moon".to_string(),
             if_follow: 0,
+            banner: "".to_string(),
         }
     }
 }
@@ -251,7 +256,7 @@ pub fn get_user_info(
     user_info.email = user_select.email.clone();
     user_info.twitter = user_select.twitter.clone();
     user_info.about = user_select.about.clone();
-
+    user_info.banner = user_select.banner.clone();
     //get followers
     let res = Users::get_user_by_followee(&conn, address.clone());
     if res.is_ok() {

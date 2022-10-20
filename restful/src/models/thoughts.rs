@@ -53,8 +53,14 @@ impl Thoughts {
         thought_type: Option<String>,
         address: Option<String>,
         submit_state: Option<String>,
+        order_by: Option<i32>,
     ) -> Result<(Vec<Thoughts>, i64), Error> {
-        let mut query = all_thoughts.order(thoughts::likes.desc()).into_boxed();
+        // let mut query = all_thoughts.order(thoughts::likes.desc()).into_boxed();
+        let mut query = all_thoughts.into_boxed();
+        query = match order_by {
+            Some(1) => query.order_by(thoughts::id.desc()),
+            _ => query.order_by(thoughts::likes.desc()),
+        };
         if let Some(thought_type) = thought_type {
             query = query.filter(thoughts::thought_type.eq(thought_type));
         }

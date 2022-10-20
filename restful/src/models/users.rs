@@ -9,13 +9,13 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
 // this is to get users from the database
-#[derive(Serialize, Queryable)]
-pub struct UserProfile {
-    pub id: i32,
-    pub username: String,
-    pub password: String,
-    pub first_name: String,
-}
+// #[derive(Serialize, Queryable)]
+// pub struct UserProfile {
+//     pub id: i32,
+//     pub username: String,
+//     pub password: String,
+//     pub first_name: String,
+// }
 
 #[derive(Debug, Queryable, Serialize, Default, Clone)]
 pub struct Users {
@@ -31,6 +31,7 @@ pub struct Users {
     #[serde(skip_serializing)]
     pub updated_at: NaiveDateTime,
     pub address: String,
+    pub banner: String,
 }
 
 #[derive(Debug, Queryable, Insertable, Default, AsChangeset)]
@@ -43,6 +44,7 @@ pub struct NewUser {
     pub about: String,
     pub pts: i64,
     pub address: String,
+    pub banner: String,
 }
 
 #[derive(Debug, Queryable, Insertable, Default)]

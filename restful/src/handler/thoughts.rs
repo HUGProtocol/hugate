@@ -20,6 +20,7 @@ pub struct GetPopularThoughtsListReq {
     #[form(field = "type")]
     pub thought_type: String,
     pub address: String,
+    pub order_by: Option<i32>,
     pub currentPage: i64,
     pub pageSize: i64,
 }
@@ -40,6 +41,7 @@ pub struct Thought {
     pub comment_num: i64,
     pub sourceUrl: String,
     pub embeded: String,
+    pub create_time: i64,
 }
 
 impl Default for Thought {
@@ -61,6 +63,7 @@ impl Default for Thought {
                 .to_string(),
             comment_num: 0,
             embeded: "".to_string(),
+            create_time: 0,
             // embeded:r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -112,6 +115,7 @@ pub fn get_popular_thoughts_list(
         thought_type,
         address,
         None,
+        pop_thoughts_list_req.order_by,
     );
 
     if res.is_err() {
@@ -138,6 +142,7 @@ pub fn get_popular_thoughts_list(
             x.sourceUrl = y.source_url.clone();
             x.pts = y.pts;
             x.embeded = y.embeded.clone();
+            x.create_time = y.create_at.timestamp();
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -241,6 +246,7 @@ pub fn get_my_thoughts_list(
             x.thought_id = y.id;
             x.pts = y.pts;
             x.embeded = y.embeded.clone();
+            x.create_time = y.create_at.timestamp();
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -283,6 +289,7 @@ pub struct ThoughtDetail {
     pub if_like: i32,
     pub html: String,
     pub embeded: String,
+    pub create_time: i64,
 }
 
 impl Default for ThoughtDetail {
@@ -305,6 +312,7 @@ impl Default for ThoughtDetail {
             userInfo: users::Users::default(),
             html: "".to_string(),
             embeded: "".to_string(),
+            create_time: 0,
             // embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -354,7 +362,7 @@ pub fn get_thought_detail(
     thought_detail.html = t.html.clone();
     thought_detail.pts = t.pts;
     thought_detail.embeded = t.embeded.clone();
-
+    thought_detail.create_time = t.create_at.timestamp();
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
     if res.is_ok() {
         if let Some(u) = res.unwrap().get(0) {
