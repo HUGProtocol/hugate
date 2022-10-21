@@ -612,6 +612,30 @@ pub fn createThoughts(
     Json(HugResponse::new_success())
 }
 
+#[derive(FromForm)]
+pub struct EmbededCardReq {
+    sourceUrl: String,
+}
+#[post("/embededCard", data = "<req>")]
+pub fn embededCard(req: Form<EmbededCardReq>) -> Json<HugResponse<OneLineResultBody>> {
+    if !req.sourceUrl.contains("twitter") {
+        return Json(HugResponse::new_failed("not twitter url", ""));
+    }
+    if let Some(embeded) = curl_twitter(req.sourceUrl.clone()) {
+        if let Ok(s) = std::str::from_utf8(&embeded) {
+            return Json(HugResponse {
+                resultCode: 200,
+                resultMsg: "success".to_string(),
+                resultBody: OneLineResultBody(s.to_string()),
+            });
+        }
+    }
+    Json(HugResponse::new_failed(
+        "get twitter embeded failed",
+        &req.sourceUrl,
+    ))
+}
+
 pub fn curl_twitter(url: String) -> Option<Vec<u8>> {
     let mut embeded_url = r#"https://publish.twitter.com/oembed?url="#.to_string();
     embeded_url += &url;

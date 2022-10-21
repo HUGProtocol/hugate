@@ -79,6 +79,7 @@ fn rocket() -> rocket::Rocket {
                 thoughts::like_or_unlike_thought,
                 thoughts::reward,
                 thoughts::createThoughts,
+                thoughts::embededCard,
             ],
         )
         .attach(get_cors())
