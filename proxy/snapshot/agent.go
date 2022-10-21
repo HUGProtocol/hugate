@@ -9,8 +9,10 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"io/ioutil"
 	"log"
+	"os"
 	log2 "proxy/log"
 	"sync"
 	"time"
@@ -156,21 +158,29 @@ func SingleFileSnapshot(url string, htmlFileName string) error {
 		return errors.New("timeout")
 	case <-statusCh:
 	}
-
-	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	time.Sleep(time.Second)
+	//out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: false})
 	if err != nil {
 		return err
 	}
 
-	buf, err := ioutil.ReadAll(out)
+	file, err := os.Create(htmlFileName)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(htmlFileName, buf, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	defer file.Close()
+	_, err = stdcopy.StdCopy(file, os.Stderr, out)
+	//buf, err := ioutil.ReadAll(out)
+	//if err != nil {
+	//	return err
+	//}
+	//fmt.Println(string(buf))
+	//err = ioutil.WriteFile(htmlFileName, buf, 0644)
+	//if err != nil {
+	//	return err
+	//}
+	return err
 }
 
 func (agent *HeadlessAgent) ShotOne(direction string, pic_filename, text_filename, text_backup string) error {

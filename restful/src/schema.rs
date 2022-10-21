@@ -29,6 +29,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    pass (id) {
+        id -> Int4,
+        thought_id -> Int8,
+        token_id -> Int8,
+    }
+}
+
+diesel::table! {
     thoughts (id) {
         id -> Int4,
         content -> Varchar,
@@ -69,6 +77,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     comment,
     follow,
     likes,
+    pass,
     thoughts,
     users,
 );
