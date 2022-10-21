@@ -80,6 +80,8 @@ fn rocket() -> rocket::Rocket {
                 thoughts::reward,
                 thoughts::createThoughts,
                 thoughts::embededCard,
+                thoughts::getPassThoughtId,
+                thoughts::getPassTokenId,
             ],
         )
         .attach(get_cors())

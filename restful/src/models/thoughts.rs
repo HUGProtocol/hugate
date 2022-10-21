@@ -28,7 +28,7 @@ pub struct Thoughts {
     pub html: String,
     pub pts: i64,
     pub embeded: String,
-    pub html_backup:String,
+    pub html_backup: String,
 }
 
 #[derive(Debug, Insertable, AsChangeset)]
@@ -44,7 +44,7 @@ pub struct NewThought {
     pub submit_state: String,
     pub html: String,
     pub embeded: String,
-    pub html_backup:String,
+    pub html_backup: String,
 }
 
 impl Thoughts {
@@ -73,6 +73,7 @@ impl Thoughts {
             query = query.filter(thoughts::submit_state.eq(submit_state));
         }
         query = query.filter(not(thoughts::viewed.eq("self")));
+        query = query.filter(not(thoughts::submit_state.eq("save")));
         let query_page = query.paginate(page).per_page(per_page);
         query_page.load_and_count_pages(conn)
     }
@@ -108,11 +109,11 @@ impl Thoughts {
             .load(conn)
     }
 
-    pub fn create(conn: &PgConnection, new_thought: NewThought) -> bool {
-        diesel::insert_into(thoughts::table)
+    pub fn create(conn: &PgConnection, new_thought: NewThought) -> Result<i32, Error> {
+        let res: Vec<Thoughts> = diesel::insert_into(thoughts::table)
             .values(&new_thought)
-            .execute(conn)
-            .is_ok()
+            .get_results(conn)?;
+        Ok(res.get(0).ok_or(Error::NotFound)?.id)
     }
 
     pub fn update(conn: &PgConnection, new_thought: NewThought, thought_id: i32) -> bool {

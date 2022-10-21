@@ -1,4 +1,4 @@
-use std::ptr::null;
+use std::{fmt::format, ptr::null};
 
 use chrono::{format, NaiveDate, NaiveDateTime};
 
@@ -9,8 +9,8 @@ use super::{
 use crate::{handler::*, models};
 use crate::{jwt::check_cookies, models::users};
 use crate::{
-    models::{comments, likes, thoughts},
-    schema::comment,
+    models::{comments, likes, pass, thoughts},
+    schema::pass::token_id,
 };
 use curl::easy::Easy;
 
@@ -42,6 +42,9 @@ pub struct Thought {
     pub sourceUrl: String,
     pub embeded: String,
     pub create_time: i64,
+    pub state: String,
+    pub tokenId: i64,
+    pub viewed: String,
 }
 
 impl Default for Thought {
@@ -64,6 +67,9 @@ impl Default for Thought {
             comment_num: 0,
             embeded: "".to_string(),
             create_time: 0,
+            state: "".to_string(),
+            tokenId: -1,
+            viewed: "".to_string(),
             // embeded:r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -143,6 +149,22 @@ pub fn get_popular_thoughts_list(
             x.pts = y.pts;
             x.embeded = y.embeded.clone();
             x.create_time = y.create_at.timestamp();
+            x.state = y.submit_state.clone();
+            x.viewed = y.viewed.clone();
+            if y.viewed == "pass" {
+                let res = pass::Pass::get_by_thought(&conn, y.id as i64);
+                if let Ok(list) = res {
+                    if list.len() > 0 {
+                        x.tokenId = list.get(0).unwrap().token_id;
+                    }
+                } else {
+                    println!(
+                        "{}",
+                        format!("viewed value pass but tokenId not fount {}", y.id)
+                    );
+                    x.viewed = "all".to_string();
+                }
+            }
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -247,6 +269,8 @@ pub fn get_my_thoughts_list(
             x.pts = y.pts;
             x.embeded = y.embeded.clone();
             x.create_time = y.create_at.timestamp();
+            x.state = y.submit_state.clone();
+            x.viewed = y.viewed.clone();
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -544,6 +568,7 @@ pub struct CreateThoughtReq {
     html: String,
     thought_id_op: Option<i32>,
     html_backup: String,
+    token_id_op: Option<i64>,
 }
 #[post("/createThoughts", data = "<req>")]
 pub fn createThoughts(
@@ -593,6 +618,17 @@ pub fn createThoughts(
                         }
                     }
                     thoughts::Thoughts::update(&conn, new_thought, thought_id);
+                    if let Some(pass_token_id) = req.token_id_op {
+                        if pass_token_id >= 0 {
+                            pass::Pass::put_pass(
+                                &conn,
+                                pass::NewPass {
+                                    thought_id: thought_id as i64,
+                                    token_id: pass_token_id,
+                                },
+                            );
+                        }
+                    }
                 }
             }
             return Json(HugResponse::new_success());
@@ -606,10 +642,69 @@ pub fn createThoughts(
         }
     }
     let res = thoughts::Thoughts::create(&conn, new_thought);
-    if res == false {
+    if res.is_err() {
         return Json(HugResponse::new_failed("create thought failed", ""));
     }
+
+    if let Some(pass_token_id) = req.token_id_op {
+        if pass_token_id >= 0 {
+            pass::Pass::put_pass(
+                &conn,
+                pass::NewPass {
+                    thought_id: res.unwrap() as i64,
+                    token_id: pass_token_id,
+                },
+            );
+        }
+    }
+
     Json(HugResponse::new_success())
+}
+
+#[get("/getPassTokenId?<thoughtId>")]
+pub fn getPassTokenId(conn: DbConn, thoughtId: i64) -> Json<HugResponse<OneLineResultBody>> {
+    let res = pass::Pass::get_by_thought(&conn, thoughtId);
+    match res {
+        Err(_) => {
+            return Json(HugResponse::new_success());
+        }
+        Ok(list) => {
+            if list.len() == 0 {
+                return Json(HugResponse::new_success());
+            }
+            let token_list = list.into_iter().map(|x| x.token_id).collect::<Vec<i64>>();
+
+            return Json(HugResponse {
+                resultCode: 200,
+                resultMsg: "success".to_string(),
+                resultBody: OneLineResultBody(
+                    format!("{}", token_list.get(0).unwrap()).to_string(),
+                ),
+            });
+        }
+    }
+}
+
+#[get("/getPassThoughtId?<tokenId>")]
+pub fn getPassThoughtId(conn: DbConn, tokenId: i64) -> Json<HugResponse<OneLineResultBody>> {
+    let res = pass::Pass::get_by_token(&conn, tokenId);
+    match res {
+        Err(_) => {
+            return Json(HugResponse::new_success());
+        }
+        Ok(list) => {
+            if list.len() == 0 {
+                return Json(HugResponse::new_success());
+            }
+            let thought_list = list.into_iter().map(|x| x.thought_id).collect::<Vec<i64>>();
+
+            return Json(HugResponse {
+                resultCode: 200,
+                resultMsg: "success".to_string(),
+                resultBody: OneLineResultBody(format!("{:?}", thought_list).to_string()),
+            });
+        }
+    }
 }
 
 #[derive(FromForm)]
