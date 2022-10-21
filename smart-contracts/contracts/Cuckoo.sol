@@ -13,7 +13,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "./CoreFactory.sol";
 import "./interfaces/hooks/IUserProfile.sol";
 
-contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165StorageUpgradeable, CoreFactory {
+contract Cuckoo is
+    ERC1155URIStorageUpgradeable,
+    OwnableUpgradeable,
+    ERC165StorageUpgradeable,
+    CoreFactory
+{
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Counters for Counters.Counter;
     struct ChannelBasic {
@@ -21,6 +26,13 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         uint256 price;
         uint256 passCount;
         address token;
+    }
+
+    struct PassInfo {
+        address owner;
+        uint256 total;
+        uint256 amount;
+        string tokenURI;
     }
 
     IUserProfile UserProfile;
@@ -39,16 +51,9 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         address indexed token
     );
 
-    event CreateChannelEvent(
-        address indexed owner,
-        uint256 tokenId
-    );
+    event CreateChannelEvent(address indexed owner, uint256 tokenId);
 
-    event MintEvent(
-        address indexed owner,
-        uint256 tokenId,
-        uint256 amount
-    );
+    event MintEvent(address indexed owner, uint256 tokenId, uint256 amount);
 
     /// ***********************
     //Core
@@ -70,18 +75,19 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         address to,
         uint256 id,
         uint256 amount,
-        bytes memory data) internal override {
+        bytes memory data
+    ) internal override {
         _beforeMint(id, amount);
         ERC1155Upgradeable._mint(to, id, amount, data);
         emit MintEvent(to, id, amount);
     }
 
     function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    virtual
-    override(ERC1155Upgradeable, ERC165StorageUpgradeable)
-    returns (bool)
+        public
+        view
+        virtual
+        override(ERC1155Upgradeable, ERC165StorageUpgradeable)
+        returns (bool)
     {
         return super.supportsInterface(interfaceId);
     }
@@ -110,12 +116,20 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
     //Channel Owner
     /// ***********************
     //set token url
-    function setTokenURI(uint256 tokenId, string memory tokenURI) public onlyChannelOwner(tokenId) {
+    function setTokenURI(uint256 tokenId, string memory tokenURI)
+        public
+        onlyChannelOwner(tokenId)
+    {
         ERC1155URIStorageUpgradeable._setURI(tokenId, tokenURI);
     }
 
     //init channel
-    function newChannel(string memory tokenURI, uint256 price, address payment) public {
+    function newChannel(
+        string memory tokenURI,
+        uint256 price,
+        address payment,
+        uint256 amount
+    ) public {
         //new channel token
         // require(payment != address(0));
         uint256 newId = _tokenIds.current();
@@ -128,7 +142,7 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
 
         setTokenURI(newId, tokenURI);
 
-        _mint(msg.sender, newId, 1, "");
+        _mint(msg.sender, newId, amount, "");
         _tokenIds.increment();
 
         //new channel contract
@@ -138,40 +152,99 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
     }
 
     //update channel basic info
-    function updateChannelBasic(uint256 tokenId, uint256 price, address token) public onlyChannelOwner(tokenId) {
+    function updateChannelBasic(
+        uint256 tokenId,
+        uint256 price,
+        address token
+    ) public onlyChannelOwner(tokenId) {
         require(token != address(0));
         ChannelBasic storage basic = ChannelInfo[tokenId];
         basic.price = price;
         basic.token = token;
-        emit UpdateChannelEvent(msg.sender, price, basic.passCount, basic.token);
+        emit UpdateChannelEvent(
+            msg.sender,
+            price,
+            basic.passCount,
+            basic.token
+        );
     }
 
-    function updateChannelOwner(uint256 tokenId, address newOwner) public onlyChannelOwner(tokenId) {
+    function updateChannelOwner(uint256 tokenId, address newOwner)
+        public
+        onlyChannelOwner(tokenId)
+    {
         require(newOwner != address(0));
         ChannelBasic storage basic = ChannelInfo[tokenId];
         basic.owner = newOwner;
-        emit UpdateChannelEvent(msg.sender, basic.price, basic.passCount, basic.token);
+        emit UpdateChannelEvent(
+            msg.sender,
+            basic.price,
+            basic.passCount,
+            basic.token
+        );
     }
 
     /// ***********************
     //Channel Subscriber
     /// ***********************
-    function subscribeChannel(uint256 tokenId) public onlyChannelExist(tokenId) {
-        // ChannelBasic memory basic = ChannelInfo[tokenId];
-        // IERC20Upgradeable paymentToken = IERC20Upgradeable(basic.token);
-        // paymentToken.safeTransferFrom(msg.sender, basic.owner, basic.price);
+    function subscribeChannel(uint256 tokenId)
+        public
+        onlyChannelExist(tokenId)
+    {
+        ChannelBasic memory basic = ChannelInfo[tokenId];
+
+        if (basic.price != 0) {
+            IERC20Upgradeable paymentToken = IERC20Upgradeable(basic.token);
+            paymentToken.safeTransferFrom(msg.sender, basic.owner, basic.price);
+        }
         _mint(msg.sender, tokenId, 1, "");
+    }
+
+    function batchSend(uint256 tokenId, address[] memory addressList)
+        public
+        onlyChannelExist(tokenId)
+    {
+        require(addressList.length < 10, "receiver expand");
+        for (uint256 i = 0; i < addressList.length; ++i) {
+            address receiver = addressList[i];
+            ERC1155Upgradeable.safeTransferFrom(
+                msg.sender,
+                receiver,
+                tokenId,
+                1,
+                ""
+            );
+        }
     }
 
     /// ***********************
     //View Functions
     /// ***********************
-    function version() public view returns (uint256){
+    function version() public view returns (uint256) {
         return _version.current();
     }
 
-    function ifPublisher() public view returns (bool){
+    function ifPublisher() public view returns (bool) {
         return _publisher[msg.sender];
+    }
+
+    function checkPass(address addr) public view returns (PassInfo[] memory) {
+        uint256[] memory ownedTokens = OwnedChannels[addr];
+        PassInfo[] memory passInfos = new PassInfo[](ownedTokens.length);
+        for (uint256 i = 0; i < ownedTokens.length; ++i) {
+            uint256 tokenId = ownedTokens[i];
+            ChannelBasic memory basic = ChannelInfo[tokenId];
+            string memory tokenURI = ERC1155URIStorageUpgradeable.uri(tokenId);
+            uint256 amount = ERC1155Upgradeable.balanceOf(addr, tokenId);
+            PassInfo memory info = PassInfo(
+                addr,
+                basic.passCount,
+                amount,
+                tokenURI
+            );
+            passInfos[i] = info;
+        }
+        return passInfos;
     }
 
     /// ***********************
@@ -183,15 +256,14 @@ contract Cuckoo is ERC1155URIStorageUpgradeable, OwnableUpgradeable, ERC165Stora
         _;
     }
 
-    modifier onlyPublisher(){
+    modifier onlyPublisher() {
         require(_publisher[msg.sender] == true, "only publisher");
         _;
     }
 
-    modifier onlyChannelOwner(uint256 channelId){
+    modifier onlyChannelOwner(uint256 channelId) {
         ChannelBasic memory basic = ChannelInfo[channelId];
         require(msg.sender == basic.owner, "only channel owner");
         _;
     }
-
 }

@@ -32,7 +32,7 @@ module.exports = {
         format: 'json',
         // pretty: true,
     },
-    defaultNetwork: "localhost",
+    // defaultNetwork: "localhost",
     networks: {
         localhost: {
             url: "http://127.0.0.1:8545",
