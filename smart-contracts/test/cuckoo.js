@@ -1,10 +1,10 @@
-const {expect, use} = require('chai')
-const {assert} = require('console')
-const {Contract} = require('ethers')
-const {ethers, upgrades} = require('hardhat')
-const {reverts} = require('./helpers/error')
-const {anyValue} = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const {address} = require("hardhat/internal/core/config/config-validation");
+const { expect, use } = require('chai')
+const { assert } = require('console')
+const { Contract } = require('ethers')
+const { ethers, upgrades } = require('hardhat')
+const { reverts } = require('./helpers/error')
+const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { address } = require("hardhat/internal/core/config/config-validation");
 
 describe('ERC20 Basics', () => {
     let ERC20Contract
@@ -70,16 +70,16 @@ describe('ERC20 Basics', () => {
         let ChannelProxyAddress;
         const tokenUri = "ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/6476"
         const price = decimal.mul(10);
-
+        const pass_amount = 10;
         before(async () => {
             [owner, Alice, Bob] = await ethers.getSigners();
             //should not publisher should not new channel
-            const txNewChan1 = CuckooContract.connect(Alice).newChannel(tokenUri, price.toHexString(), ERC20Contract.address);
-            await expect(txNewChan1).to.be.revertedWith('only publisher');
+            // const txNewChan1 = CuckooContract.connect(Alice).newChannel(tokenUri, price.toHexString(), ERC20Contract.address);
+            // await expect(txNewChan1).to.be.revertedWith('only publisher');
 
-            //should approve publisher
-            const txAddPublisher = await CuckooContract.connect(owner).addPublisher(Alice.address);
-            await txAddPublisher.wait();
+            // //should approve publisher
+            // const txAddPublisher = await CuckooContract.connect(owner).addPublisher(Alice.address);
+            // await txAddPublisher.wait();
             // await expect(txAddPublisher).not.to.be.reverted;
 
         })
@@ -99,14 +99,14 @@ describe('ERC20 Basics', () => {
         })
 
         it('Should publisher new channel', async () => {
-            const txNewChan2 = await CuckooContract.connect(Alice).newChannel(tokenUri, price.toHexString(), ERC20Contract.address);
+            const txNewChan2 = await CuckooContract.connect(Alice).newChannel(tokenUri, price.toHexString(), ERC20Contract.address, ethers.BigNumber.from(pass_amount).toHexString());
             await txNewChan2.wait();
             // await expect(txNewChan2).not.to.be.reverted;
             const tokenId = ethers.BigNumber.from(0);
             const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
             expect(channelInfo.owner).to.equal(Alice.address);
             expect(channelInfo.price).to.equal(price);
-            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(1));
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount));
             expect(channelInfo.token).to.equal(ERC20Contract.address);
 
             //check channel proxy address
@@ -118,7 +118,7 @@ describe('ERC20 Basics', () => {
             const basic = {
                 owner: Alice.address,
                 price: price,
-                passCount: ethers.BigNumber.from(1),
+                passCount: ethers.BigNumber.from(pass_amount),
                 token: ERC20Contract.address
             };
             await expect(CuckooContract.connect(Alice).updateChannelBasic(ethers.BigNumber.from(0).toHexString(), price, ERC20Contract.address))
@@ -140,7 +140,7 @@ describe('ERC20 Basics', () => {
 
             //should channelInfo pass count added to 2
             const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
-            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(2));
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount + 1));
 
             //should spend 10 TMP fot Alice channel pass
             const tmpBalance = await ERC20Contract.connect(Bob).balanceOf(Bob.address);
@@ -164,6 +164,21 @@ describe('ERC20 Basics', () => {
             await expect(AlicePostProxy.connect(Bob).editPost(0, postTokenUriNew)).to.be.reverted;
             await expect(AlicePostProxy.connect(Alice).editPost(0, postTokenUriNew)).to.be.emit(AlicePostProxy, "EditPost").withArgs(Alice.address, 0, postTokenUriNew);
             expect(await AlicePostProxy.connect(Alice).tokenURI(0)).to.be.equal(postTokenUriNew);
+        });
+
+        it('should batch send pass', async () => {
+            const tokenId = ethers.BigNumber.from(0);
+            const tx = await CuckooContract.connect(Alice).batchSend(tokenId, [owner.address, Bob.address]);
+            await tx.wait();
+            const bobAmount = await CuckooContract.connect(Bob).balanceOf(Bob.address, tokenId.toHexString());
+            expect(bobAmount).to.equal(ethers.BigNumber.from(2));
+            const ownerAmount = await CuckooContract.connect(owner).balanceOf(owner.address, tokenId.toHexString());
+            expect(ownerAmount).to.equal(ethers.BigNumber.from(1));
+        });
+
+        it('should get pass info', async () => {
+            const info = await CuckooContract.connect(Alice).checkPass(Alice.address);
+            console.log(info);
         });
     })
 })
