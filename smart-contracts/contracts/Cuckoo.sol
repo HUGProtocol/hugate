@@ -29,6 +29,7 @@ contract Cuckoo is
     }
 
     struct PassInfo {
+        uint256 tokenId;
         address owner;
         uint256 total;
         uint256 amount;
@@ -237,7 +238,8 @@ contract Cuckoo is
             string memory tokenURI = ERC1155URIStorageUpgradeable.uri(tokenId);
             uint256 amount = ERC1155Upgradeable.balanceOf(addr, tokenId);
             PassInfo memory info = PassInfo(
-                addr,
+                tokenId,
+                basic.owner,
                 basic.passCount,
                 amount,
                 tokenURI
