@@ -45,6 +45,7 @@ diesel::table! {
         html -> Varchar,
         pts -> Int8,
         embeded -> Varchar,
+        html_backup -> Varchar,
     }
 }
 

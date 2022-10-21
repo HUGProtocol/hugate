@@ -290,6 +290,7 @@ pub struct ThoughtDetail {
     pub html: String,
     pub embeded: String,
     pub create_time: i64,
+    pub html_backup: String,
 }
 
 impl Default for ThoughtDetail {
@@ -313,6 +314,7 @@ impl Default for ThoughtDetail {
             html: "".to_string(),
             embeded: "".to_string(),
             create_time: 0,
+            html_backup: "".to_string(),
             // embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -363,6 +365,7 @@ pub fn get_thought_detail(
     thought_detail.pts = t.pts;
     thought_detail.embeded = t.embeded.clone();
     thought_detail.create_time = t.create_at.timestamp();
+    thought_detail.html_backup = t.html_backup.clone();
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
     if res.is_ok() {
         if let Some(u) = res.unwrap().get(0) {
@@ -540,6 +543,7 @@ pub struct CreateThoughtReq {
     thought_type: String,
     html: String,
     thought_id_op: Option<i32>,
+    html_backup: String,
 }
 #[post("/createThoughts", data = "<req>")]
 pub fn createThoughts(
@@ -564,6 +568,7 @@ pub fn createThoughts(
         submit_state: req.submitState.clone(),
         html: req.html.clone(),
         embeded: "".to_string(),
+        html_backup: req.html_backup.clone(),
     };
     if let Some(thought_id) = req.thought_id_op {
         if thought_id != 0 {

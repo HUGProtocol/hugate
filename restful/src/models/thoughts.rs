@@ -28,6 +28,7 @@ pub struct Thoughts {
     pub html: String,
     pub pts: i64,
     pub embeded: String,
+    pub html_backup:String,
 }
 
 #[derive(Debug, Insertable, AsChangeset)]
@@ -43,6 +44,7 @@ pub struct NewThought {
     pub submit_state: String,
     pub html: String,
     pub embeded: String,
+    pub html_backup:String,
 }
 
 impl Thoughts {
