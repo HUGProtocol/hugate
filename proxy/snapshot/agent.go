@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var SingleFileSnapshotTimeout = 30 * time.Second
+var SingleFileSnapshotTimeout = 120 * time.Second
 
 type SnapShotReq struct {
 	pic_filename         string
