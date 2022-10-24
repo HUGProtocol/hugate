@@ -89,6 +89,62 @@ func (s *Service) Upload(w http.ResponseWriter, r *http.Request) {
 	rep.ResultBody = string(bodyJson)
 }
 
+//todo：check upload file attack
+func (s *Service) JsonUpload(w http.ResponseWriter, r *http.Request) {
+	rep := Resp{
+		ResultCode: 500,
+		ResultMsg:  "",
+		ResultBody: "",
+	}
+
+	defer func() {
+		repStr, err := json.Marshal(&rep)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		_, err = w.Write(repStr)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	metadata := r.FormValue("metadata")
+	if metadata == "" {
+		return
+	}
+	tempFile, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	defer tempFile.Close()
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write([]byte(metadata))
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	output, err := s.client.Add(tempFile.Name())
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	time.Sleep(time.Second)
+	rep.ResultMsg = "success"
+	rep.ResultCode = 200
+	body := UrlBody{Url: fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, output.Cid.String())}
+	bodyJson, _ := json.Marshal(&body)
+	rep.ResultBody = string(bodyJson)
+}
+
 func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(1)
 	rep := Resp{
