@@ -35,6 +35,10 @@ func (c *Service) Start() error {
 		c.Upload(w, r)
 	})
 
+	r.HandleFunc("/api/fs/jsonUpload", func(w http.ResponseWriter, r *http.Request) {
+		c.JsonUpload(w, r)
+	})
+
 	r.HandleFunc("/api/fs/getSnapshot", func(w http.ResponseWriter, r *http.Request) {
 		c.GetSnapshot(w, r)
 	})
