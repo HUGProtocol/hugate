@@ -125,7 +125,7 @@ describe('ERC20 Basics', () => {
                 .to.emit(CuckooContract, "UpdateChannelEvent").withArgs(basic.owner, price, basic.passCount, basic.token);
         });
 
-        it('mint pass', async () => {
+        it('mint pass erc20', async () => {
             const approveAmount = decimal.mul(100);
             const tx1 = await ERC20Contract.connect(Bob).approve(CuckooContract.address, approveAmount.toHexString());
             await tx1.wait();
@@ -145,6 +145,43 @@ describe('ERC20 Basics', () => {
             //should spend 10 TMP fot Alice channel pass
             const tmpBalance = await ERC20Contract.connect(Bob).balanceOf(Bob.address);
             expect(tmpBalance).to.be.equal(decimal.mul(90));
+        });
+
+        it('Should publisher new channel price eth', async () => {
+            const txNewChan2 = await CuckooContract.connect(Alice).newChannel(tokenUri, price.toHexString(), "0x0000000000000000000000000000000000000000", ethers.BigNumber.from(pass_amount).toHexString());
+            await txNewChan2.wait();
+            const tokenId = ethers.BigNumber.from(1);
+            const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
+            expect(channelInfo.owner).to.equal(Alice.address);
+            expect(channelInfo.price).to.equal(price);
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount));
+            expect(channelInfo.token).to.equal("0x0000000000000000000000000000000000000000");
+
+            //check channel proxy address
+            ChannelProxyAddress = await CuckooContract.connect(Alice).channelProxy(tokenId.toHexString());
+        })
+
+
+        it('mint pass eth', async () => {
+            const AliceBalance = await Alice.getBalance();
+            const bobBalance = await Bob.getBalance();
+            const tokenId = ethers.BigNumber.from(1);
+            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(tokenId.toHexString(), { value: price });
+            const receipt = await tx2.wait();
+            const gasCostForTxn = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+            //should have token 1
+            const tokenAmount = await CuckooContract.connect(Bob).balanceOf(Bob.address, tokenId.toHexString());
+            expect(tokenAmount).to.equal(ethers.BigNumber.from(1));
+
+            //should channelInfo pass count added to 2
+            const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount + 1));
+
+            //should spend 10 TMP fot Alice channel pass
+            const bobBalanceNew = await Bob.getBalance();
+            const AliceBalanceNew = await Alice.getBalance();
+            expect(AliceBalanceNew).to.equal(price.add(AliceBalance));
+            expect(bobBalance).to.equal(price.add(bobBalanceNew).add(gasCostForTxn));
         });
 
         const postTokenUri = "ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/6480";
@@ -168,12 +205,18 @@ describe('ERC20 Basics', () => {
 
         it('should batch send pass', async () => {
             const tokenId = ethers.BigNumber.from(0);
+            const info = await CuckooContract.connect(Alice).checkPass(Alice.address);
+            console.log("alice before", info)
             const tx = await CuckooContract.connect(Alice).batchSend(tokenId, [owner.address, Bob.address]);
             await tx.wait();
             const bobAmount = await CuckooContract.connect(Bob).balanceOf(Bob.address, tokenId.toHexString());
             expect(bobAmount).to.equal(ethers.BigNumber.from(2));
             const ownerAmount = await CuckooContract.connect(owner).balanceOf(owner.address, tokenId.toHexString());
             expect(ownerAmount).to.equal(ethers.BigNumber.from(1));
+            const info1 = await CuckooContract.connect(Alice).checkPass(Alice.address);
+            console.log("alice after", info1)
+            const info2 = await CuckooContract.connect(Bob).checkPass(Bob.address);
+            console.log("bob info", info2)
         });
 
         it('should get pass info', async () => {

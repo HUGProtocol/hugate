@@ -22,7 +22,7 @@ contract Cuckoo is
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Counters for Counters.Counter;
     struct ChannelBasic {
-        address owner;
+        address payable owner;
         uint256 price;
         uint256 passCount;
         address token;
@@ -34,6 +34,8 @@ contract Cuckoo is
         uint256 total;
         uint256 amount;
         string tokenURI;
+        uint256 price;
+        address token;
     }
 
     IUserProfile UserProfile;
@@ -135,7 +137,12 @@ contract Cuckoo is
         // require(payment != address(0));
         uint256 newId = _tokenIds.current();
 
-        ChannelBasic memory basic = ChannelBasic(msg.sender, price, 0, payment);
+        ChannelBasic memory basic = ChannelBasic(
+            payable(msg.sender),
+            price,
+            0,
+            payment
+        );
         ChannelInfo[newId] = basic;
 
         uint256[] storage list = OwnedChannels[msg.sender];
@@ -158,7 +165,7 @@ contract Cuckoo is
         uint256 price,
         address token
     ) public onlyChannelOwner(tokenId) {
-        require(token != address(0));
+        // require(token != address(0));
         ChannelBasic storage basic = ChannelInfo[tokenId];
         basic.price = price;
         basic.token = token;
@@ -170,7 +177,7 @@ contract Cuckoo is
         );
     }
 
-    function updateChannelOwner(uint256 tokenId, address newOwner)
+    function updateChannelOwner(uint256 tokenId, address payable newOwner)
         public
         onlyChannelOwner(tokenId)
     {
@@ -190,13 +197,24 @@ contract Cuckoo is
     /// ***********************
     function subscribeChannel(uint256 tokenId)
         public
+        payable
         onlyChannelExist(tokenId)
     {
         ChannelBasic memory basic = ChannelInfo[tokenId];
 
         if (basic.price != 0) {
-            IERC20Upgradeable paymentToken = IERC20Upgradeable(basic.token);
-            paymentToken.safeTransferFrom(msg.sender, basic.owner, basic.price);
+            if (basic.token == address(0)) {
+                require(msg.value == basic.price, "value not equal to price");
+                (bool sent, ) = basic.owner.call{value: basic.price}("");
+                require(sent, "Failed to send Ether");
+            } else {
+                IERC20Upgradeable paymentToken = IERC20Upgradeable(basic.token);
+                paymentToken.safeTransferFrom(
+                    msg.sender,
+                    basic.owner,
+                    basic.price
+                );
+            }
         }
         _mint(msg.sender, tokenId, 1, "");
     }
@@ -242,7 +260,9 @@ contract Cuckoo is
                 basic.owner,
                 basic.passCount,
                 amount,
-                tokenURI
+                tokenURI,
+                basic.price,
+                basic.token
             );
             passInfos[i] = info;
         }
