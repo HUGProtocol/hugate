@@ -51,5 +51,12 @@ module.exports = {
                     PRIVATE_KEY,
                 ]
         },
+        fuji: {
+            url: "https://avalanche-fuji.infura.io/v3/ce421f619bc34c37a0fb86075d41226f",
+            accounts:
+                [
+                    PRIVATE_KEY,
+                ]
+        },
     }
 };

@@ -29,6 +29,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    metadata (id) {
+        id -> Int4,
+        meta_json -> Varchar,
+        address -> Varchar,
+        token_id -> Int8,
+    }
+}
+
+diesel::table! {
     pass (id) {
         id -> Int4,
         thought_id -> Int8,
@@ -77,6 +86,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     comment,
     follow,
     likes,
+    metadata,
     pass,
     thoughts,
     users,

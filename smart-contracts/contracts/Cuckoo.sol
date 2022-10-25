@@ -81,6 +81,11 @@ contract Cuckoo is
         bytes memory data
     ) internal override {
         _beforeMint(id, amount);
+        uint256 am = ERC1155Upgradeable.balanceOf(to, id);
+        if (am == 0) {
+            uint256[] storage list = OwnedChannels[to];
+            list.push(id);
+        }
         ERC1155Upgradeable._mint(to, id, amount, data);
         emit MintEvent(to, id, amount);
     }
@@ -144,9 +149,6 @@ contract Cuckoo is
             payment
         );
         ChannelInfo[newId] = basic;
-
-        uint256[] storage list = OwnedChannels[msg.sender];
-        list.push(newId);
 
         setTokenURI(newId, tokenURI);
 
@@ -226,6 +228,11 @@ contract Cuckoo is
         require(addressList.length < 10, "receiver expand");
         for (uint256 i = 0; i < addressList.length; ++i) {
             address receiver = addressList[i];
+            uint256 amount = ERC1155Upgradeable.balanceOf(receiver, tokenId);
+            if (amount == 0) {
+                uint256[] storage list = OwnedChannels[receiver];
+                list.push(tokenId);
+            }
             ERC1155Upgradeable.safeTransferFrom(
                 msg.sender,
                 receiver,

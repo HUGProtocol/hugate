@@ -82,6 +82,8 @@ fn rocket() -> rocket::Rocket {
                 thoughts::embededCard,
                 thoughts::getPassThoughtId,
                 thoughts::getPassTokenId,
+                metadata::get_metadata_by_address,
+                metadata::createMetadata,
             ],
         )
         .attach(get_cors())
