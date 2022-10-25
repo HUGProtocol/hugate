@@ -13,7 +13,7 @@ const { address } = require("hardhat/internal/core/config/config-validation");
 //     console.log("Account balance:", (await deployer.getBalance()).toString());
 
 //     const cuckooSol = await ethers.getContractFactory('Cuckoo');
-//     const CuckooContract = await upgrades.upgradeProxy("0x1c433a917314Ad73E1b9878De71fccE629cCB198", cuckooSol);
+//     const CuckooContract = await upgrades.upgradeProxy("0x0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4", cuckooSol);
 //     await CuckooContract.deployed();
 //     console.log("Cuckoo address", CuckooContract.address);
 // }
@@ -55,7 +55,7 @@ async function main() {
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
     const cuckooSol = await ethers.getContractFactory('Cuckoo');
-    const CuckooContract = await cuckooSol.attach("0x1c433a917314Ad73E1b9878De71fccE629cCB198");
+    const CuckooContract = await cuckooSol.attach("0x0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4");
 
     const tokenUri = "http://18.118.160.68:6137/ipfs/QmVUF8AGz4vLL1u5J269g9xjMxgpCYJgr5oUa2MwnPgoGt";
     const decimal = ethers.utils.parseUnits('1.0', 18);

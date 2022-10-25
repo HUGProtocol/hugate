@@ -2,7 +2,7 @@
   "manifestVersion": "3.2",
   "admin": {
     "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    "txHash": "0x2e261987819e6a9a3dc11b4cbef1863584f350d3d1afa0ba731a868c67d09792"
+    "txHash": "0x6aa3640a7e47b210ebe385a58b77d87685843cf7b5068af4eb7f22b6f0ac0d6b"
   },
   "proxies": [
     {
@@ -17,7 +17,7 @@
     },
     {
       "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-      "txHash": "0xa2a7b0beedfd25add991a617b0c6737f584c50ffe80e577cf0faa9dd8baf31ad",
+      "txHash": "0x4baf6e6912122b962ea228f5bb07138dae2a4e4f323b788edcf11975b44b9fa3",
       "kind": "transparent"
     }
   ],
@@ -379,9 +379,9 @@
         }
       }
     },
-    "d242294b59b9ef88beb55f265901a140b023d626110ab3881c8a981ef235d56b": {
+    "1228816646eaf6698e1a4c11e15fd52601e5718d020a20a15b83226c1bfd5019": {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "txHash": "0x5628805247dd4ed9f8edb8028ae00002602ed1c89ba6af031d8b08e33de27b8c",
+      "txHash": "0x387bf8b004c274adcb5122933f4d15437665f87704455c016ab9d9fc6f64f80d",
       "layout": {
         "storage": [
           {
@@ -549,7 +549,7 @@
             "label": "UserProfile",
             "offset": 0,
             "slot": "305",
-            "type": "t_contract(IUserProfile)8369",
+            "type": "t_contract(IUserProfile)8409",
             "contract": "Cuckoo",
             "src": "contracts/Cuckoo.sol:41"
           },
@@ -639,7 +639,7 @@
             "label": "bytes4",
             "numberOfBytes": "4"
           },
-          "t_contract(IUserProfile)8369": {
+          "t_contract(IUserProfile)8409": {
             "label": "contract IUserProfile",
             "numberOfBytes": "20"
           },

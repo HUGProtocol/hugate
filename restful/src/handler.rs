@@ -1,8 +1,9 @@
+pub mod comments;
 pub mod follow;
+pub mod medal;
+pub mod metadata;
 pub mod thoughts;
 pub mod user;
-pub mod comments;
-pub mod medal;
 
 use std::string;
 
@@ -30,6 +31,16 @@ impl<T: Serialize + Default> HugResponse<T> {
             resultCode: 200,
             resultMsg: "success".to_string(),
             resultBody: T::default(),
+        }
+    }
+}
+
+impl<T: Serialize> HugResponse<Option<T>> {
+    pub fn new_none(show_error: &str) -> Self {
+        HugResponse {
+            resultCode: 500,
+            resultMsg: show_error.to_string(),
+            resultBody: None,
         }
     }
 }
