@@ -181,16 +181,16 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 	defer textTempFile.Close()
 	defer os.Remove(textTempFile.Name())
 
-	textBackup, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	defer textBackup.Close()
-	defer os.Remove(textBackup.Name())
+	//textBackup, err := ioutil.TempFile(cluster_client.DefaultTempFilePath, "upload-*")
+	//if err != nil {
+	//	log.Error(err)
+	//	return
+	//}
+	//defer textBackup.Close()
+	//defer os.Remove(textBackup.Name())
 
 	fmt.Println(3)
-	err = s.chrome.ShotOne(direction, picTempFile.Name(), textTempFile.Name(), textBackup.Name())
+	err = s.chrome.ShotOne(direction, picTempFile.Name(), textTempFile.Name())
 	if err != nil {
 		log.Error(err)
 		return
@@ -206,11 +206,11 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		return
 	}
-	textBackupOutput, err := s.client.Add(textBackup.Name())
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	//textBackupOutput, err := s.client.Add(textBackup.Name())
+	//if err != nil {
+	//	log.Error(err)
+	//	return
+	//}
 	fmt.Println(5)
 	//sleep for added pic
 	//time.Sleep(time.Second * 2)
@@ -219,7 +219,8 @@ func (s *Service) GetSnapshot(w http.ResponseWriter, r *http.Request) {
 	body := UrlBody{
 		Url:        fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, picOutput.Cid.String()),
 		Html:       fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, textOutput.Cid.String()),
-		HtmlBackup: fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, textBackupOutput.Cid.String()),
+		HtmlBackup: "",
+		//HtmlBackup: fmt.Sprintf("%v/ipfs/%v", s.client.GatewayUrl, textBackupOutput.Cid.String()),
 	}
 	bodyJson, _ := json.Marshal(&body)
 	rep.ResultBody = string(bodyJson)

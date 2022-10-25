@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -21,11 +20,11 @@ import (
 var SingleFileSnapshotTimeout = 120 * time.Second
 
 type SnapShotReq struct {
-	pic_filename         string
-	text_filename        string
-	text_backup_filename string
-	direction            string
-	resp                 chan error
+	pic_filename  string
+	text_filename string
+	//text_backup_filename string
+	direction string
+	resp      chan error
 }
 
 type HeadlessAgent struct {
@@ -46,7 +45,7 @@ func (agent *HeadlessAgent) Start() {
 			direction := req.direction
 			picFilename := req.pic_filename
 			textFilename := req.text_filename
-			text_backup := req.text_backup_filename
+			//text_backup := req.text_backup_filename
 			shot := func() error {
 				log2.Info(direction)
 				wsUrl := agent.WsUrl
@@ -68,19 +67,19 @@ func (agent *HeadlessAgent) Start() {
 				defer cancel()
 				var buf []byte
 				fmt.Println(21)
-				var res string
+				//var res string
 				err := chromedp.Run(lastCtx,
 					chromedp.Navigate(direction),
-					chromedp.Sleep(time.Second),
+					chromedp.Sleep(time.Second*10),
 					chromedp.FullScreenshot(&buf, 90),
-					chromedp.ActionFunc(func(ctx context.Context) error {
-						node, err := dom.GetDocument().Do(ctx)
-						if err != nil {
-							return err
-						}
-						res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-						return err
-					}),
+					//chromedp.ActionFunc(func(ctx context.Context) error {
+					//	node, err := dom.GetDocument().Do(ctx)
+					//	if err != nil {
+					//		return err
+					//	}
+					//	res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+					//	return err
+					//}),
 				)
 				if err != nil {
 					return err
@@ -89,9 +88,9 @@ func (agent *HeadlessAgent) Start() {
 				if err := ioutil.WriteFile(picFilename, buf, 0644); err != nil {
 					return err
 				}
-				if err := ioutil.WriteFile(text_backup, []byte(res), 0644); err != nil {
-					return err
-				}
+				//if err := ioutil.WriteFile(text_backup, []byte(res), 0644); err != nil {
+				//	return err
+				//}
 				return nil
 			}
 			fmt.Println(23)
@@ -183,13 +182,13 @@ func SingleFileSnapshot(url string, htmlFileName string) error {
 	return err
 }
 
-func (agent *HeadlessAgent) ShotOne(direction string, pic_filename, text_filename, text_backup string) error {
+func (agent *HeadlessAgent) ShotOne(direction string, pic_filename, text_filename string) error {
 	req := SnapShotReq{
-		pic_filename:         pic_filename,
-		text_filename:        text_filename,
-		text_backup_filename: text_backup,
-		direction:            direction,
-		resp:                 make(chan error, 1),
+		pic_filename:  pic_filename,
+		text_filename: text_filename,
+		//text_backup_filename: text_backup,
+		direction: direction,
+		resp:      make(chan error, 1),
 	}
 	ticker := time.NewTicker(time.Minute * 5)
 	select {
