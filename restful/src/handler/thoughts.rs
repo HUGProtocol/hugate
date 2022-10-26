@@ -378,6 +378,16 @@ pub fn get_thought_detail(
     }
 
     let t = r.get(0).unwrap();
+    if t.viewed == "followers" {
+        let is_follow = users::Users::if_follow(role.address.clone(), t.address.clone(), &conn);
+        if !is_follow {
+            return Json(HugResponse {
+                resultCode: 500,
+                resultMsg: format!("only follower"),
+                resultBody: None,
+            });
+        }
+    }
     thought_detail.tips = t.tips.clone();
     thought_detail.content = t.content.clone();
     thought_detail.thought_type = t.thought_type.clone();
