@@ -23,6 +23,9 @@ hex = "0.4.3"
 chrono = "0.4.22"
 rocket_cors = "0.5.1"
 curl = "0.4.44"
+hex-literal = "0.3.4"
+ethabi = "16.0.0"
+tokio = "1.21.2"
 
 [dependencies.rocket_contrib]
 version = "*"

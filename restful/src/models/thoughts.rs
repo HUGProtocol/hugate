@@ -4,7 +4,7 @@ use crate::schema::follow::dsl::follow as all_follows;
 use crate::schema::thoughts::dsl::thoughts as all_thoughts;
 use crate::schema::thoughts::likes;
 use crate::schema::users::dsl::users as all_users;
-use crate::schema::{self, follow, thoughts, users};
+use crate::schema::{self, follow, likes as likes_table, thoughts, users};
 use chrono::NaiveDateTime;
 use diesel::dsl::not;
 use diesel::pg::PgConnection;
@@ -74,6 +74,50 @@ impl Thoughts {
         }
         query = query.filter(not(thoughts::viewed.eq("self")));
         query = query.filter(not(thoughts::submit_state.eq("save")));
+        let query_page = query.paginate(page).per_page(per_page);
+        query_page.load_and_count_pages(conn)
+    }
+
+    pub fn get_my_like(
+        conn: &PgConnection,
+        address: String,
+        page: i64,
+        per_page: i64,
+        thought_type: Option<String>,
+        viewed: Option<String>,
+    ) -> Result<(Vec<Thoughts>, i64), Error> {
+        // let filtered = likes_table::dsl::likes.filter(likes_table::address.eq(address));
+        let joined = thoughts::table
+            .left_join(likes_table::table.on(likes_table::thought_id.eq(thoughts::id)))
+            .filter(likes_table::address.eq(address));
+        let mut query = joined
+            .order(thoughts::id.desc())
+            .select((
+                thoughts::id,
+                thoughts::content,
+                thoughts::address,
+                thoughts::tips,
+                thoughts::thought_type,
+                thoughts::source_url,
+                thoughts::snapshot,
+                thoughts::create_at,
+                thoughts::updated_at,
+                thoughts::likes,
+                thoughts::viewed,
+                thoughts::submit_state,
+                thoughts::html,
+                thoughts::pts,
+                thoughts::embeded,
+                thoughts::html_backup,
+            ))
+            .into_boxed();
+
+        if let Some(viewed) = viewed {
+            query = query.filter(thoughts::viewed.eq(viewed));
+        }
+        if let Some(thought_type) = thought_type {
+            query = query.filter(thoughts::thought_type.eq(thought_type));
+        }
         let query_page = query.paginate(page).per_page(per_page);
         query_page.load_and_count_pages(conn)
     }

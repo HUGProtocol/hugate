@@ -55,16 +55,12 @@ pub fn get_thought_comments(
     thoughtId: i32,
 ) -> Json<HugResponse<Option<getThoughtsCommentsBody>>> {
     //check cookies
-    let res = check_cookies(&cookies);
-    if res.is_err() {
-        return Json(HugResponse {
-            resultCode: 500,
-            resultMsg: "check token failed".to_string(),
-            resultBody: None,
-        });
+    let jwt_res = check_cookies(&cookies);
+    let mut jwt_addr = None;
+    if jwt_res.is_ok() {
+        let role = jwt_res.unwrap();
+        jwt_addr = Some(role.address.clone());
     }
-    let role = res.unwrap();
-    let mut address = role.address.clone();
     //get comments
     let res = comments::Comment::get_by_thought_id(&conn, thoughtId);
     if res.is_err() {
@@ -92,15 +88,18 @@ pub fn get_thought_comments(
                     x.userName = us.username.clone();
                 }
             }
-            if likes::Likes::if_like(
-                &conn,
-                likes::NewLike {
-                    address: address.clone(),
-                    thought_id: y.id,
-                },
-            ) {
-                x.if_like = 1;
+            if jwt_addr.is_some() {
+                if likes::Likes::if_like(
+                    &conn,
+                    likes::NewLike {
+                        address: jwt_addr.clone().unwrap(),
+                        thought_id: y.id,
+                    },
+                ) {
+                    x.if_like = 1;
+                }
             }
+
             if let Ok(like_num) = likes::Likes::count(&conn, y.id) {
                 x.likeNum = like_num;
             }
@@ -108,17 +107,17 @@ pub fn get_thought_comments(
         })
         .collect::<Vec<Comment>>();
     let mut if_like = 0;
-    let res = likes::Likes::if_like(
-        &conn,
-        likes::NewLike {
-            address: address,
-            thought_id: thoughtId,
-        },
-    );
-    if res {
-        if_like = 1;
-    } else {
-        if_like = 0;
+    if jwt_addr.is_some() {
+        let res = likes::Likes::if_like(
+            &conn,
+            likes::NewLike {
+                address: jwt_addr.clone().unwrap(),
+                thought_id: thoughtId,
+            },
+        );
+        if res {
+            if_like = 1;
+        }
     }
     Json(HugResponse {
         resultCode: 200,
