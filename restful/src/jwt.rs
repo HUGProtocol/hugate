@@ -80,7 +80,10 @@ pub fn verify_login_signature(
     //check time
     let now = Utc::now().timestamp();
     if timestamp as i64 > now {
-        return Result::Err(Error::new(ErrorKind::Other, "timestamp later than current time"));
+        return Result::Err(Error::new(
+            ErrorKind::Other,
+            "timestamp later than current time",
+        ));
     }
 
     //recover
@@ -116,7 +119,7 @@ pub fn verify_login_signature(
 
 #[cfg(test)]
 mod tests {
-    use web3::signing::recover;
+    use web3::{contract::tokens::Tokenizable, signing::recover};
     #[test]
     fn test_recover() {
         let account = "0x63f9a92d8d61b48a9fff8d58080425a3012d05c8".to_string();

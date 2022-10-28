@@ -1,6 +1,8 @@
 use std::{fmt::format, ptr::null};
 
 use chrono::{format, NaiveDate, NaiveDateTime};
+use diesel::result::Error;
+use ethabi::Token;
 
 use super::{
     user::{Address, UserInfoDetail},
@@ -234,15 +236,29 @@ pub fn get_my_thoughts_list(
     if my_thoughts_list_req.state != "" {
         submit_state = Some(my_thoughts_list_req.state.clone());
     }
-    let res = thoughts::Thoughts::get_my(
-        &conn,
-        address.clone(),
-        my_thoughts_list_req.currentPage,
-        my_thoughts_list_req.pageSize,
-        thought_type,
-        viewed,
-        submit_state,
-    );
+
+    let res = {
+        if submit_state == Some("like".to_string()) {
+            thoughts::Thoughts::get_my_like(
+                &conn,
+                address.clone(),
+                my_thoughts_list_req.currentPage,
+                my_thoughts_list_req.pageSize,
+                thought_type,
+                viewed,
+            )
+        } else {
+            thoughts::Thoughts::get_my(
+                &conn,
+                address.clone(),
+                my_thoughts_list_req.currentPage,
+                my_thoughts_list_req.pageSize,
+                thought_type,
+                viewed,
+                submit_state,
+            )
+        }
+    };
 
     if res.is_err() {
         return Json(HugResponse {
@@ -350,15 +366,21 @@ pub fn get_thought_detail(
     conn: DbConn,
     thoughtId: i32,
 ) -> Json<HugResponse<Option<ThoughtDetail>>> {
-    let res = check_cookies(&cookies);
-    if res.is_err() {
-        return Json(HugResponse {
-            resultCode: 500,
-            resultMsg: format!("{}", res.err().unwrap().to_string()),
-            resultBody: None,
-        });
+    let jwt_res = check_cookies(&cookies);
+    let mut jwt_addr = None;
+    if jwt_res.is_ok() {
+        let role = jwt_res.unwrap();
+        jwt_addr = Some(role.address.clone());
     }
-    let role = res.unwrap();
+
+    // if res.is_err() {
+    //     return Json(HugResponse {
+    //         resultCode: 500,
+    //         resultMsg: format!("{}", res.err().unwrap().to_string()),
+    //         resultBody: None,
+    //     });
+    // }
+    // let role = res.unwrap();
     let mut thought_detail = ThoughtDetail::default();
     let res = thoughts::Thoughts::get_by_id(&conn, thoughtId);
     if res.is_err() {
@@ -379,7 +401,15 @@ pub fn get_thought_detail(
 
     let t = r.get(0).unwrap();
     if t.viewed == "followers" {
-        let is_follow = users::Users::if_follow(role.address.clone(), t.address.clone(), &conn);
+        if jwt_addr.is_none() {
+            return Json(HugResponse {
+                resultCode: 500,
+                resultMsg: format!("{}", "token check failed"),
+                resultBody: None,
+            });
+        }
+        let is_follow =
+            users::Users::if_follow(jwt_addr.clone().unwrap(), t.address.clone(), &conn);
         if !is_follow {
             return Json(HugResponse {
                 resultCode: 500,
@@ -400,6 +430,42 @@ pub fn get_thought_detail(
     thought_detail.embeded = t.embeded.clone();
     thought_detail.create_time = t.create_at.timestamp();
     thought_detail.html_backup = t.html_backup.clone();
+
+    if t.viewed == "pass" {
+        if jwt_addr.is_none() {
+            return Json(HugResponse {
+                resultCode: 500,
+                resultMsg: format!("{}", "token check failed"),
+                resultBody: None,
+            });
+        }
+        let res = pass::Pass::get_by_thought(&conn, t.id as i64);
+        if let Ok(pass_vec) = res {
+            if let Some(ps) = pass_vec.first() {
+                let pass_token_id = ps.token_id;
+                let pass_cnt = check_pass_balance(jwt_addr.clone().unwrap(), pass_token_id as i32);
+                match pass_cnt {
+                    None => {
+                        return Json(HugResponse {
+                            resultCode: 500,
+                            resultMsg: format!("{}", "check pass failed"),
+                            resultBody: None,
+                        });
+                    }
+                    Some(cnt) => {
+                        if cnt == 0 {
+                            return Json(HugResponse {
+                                resultCode: 500,
+                                resultMsg: format!("{}", "no pass"),
+                                resultBody: None,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     let res = users::Users::get_user_by_address(&conn, t.address.clone());
     if res.is_ok() {
         if let Some(u) = res.unwrap().get(0) {
@@ -409,13 +475,17 @@ pub fn get_thought_detail(
         }
     }
 
-    let res = likes::Likes::if_like(
-        &conn,
-        likes::NewLike {
-            address: role.address.clone(),
-            thought_id: thoughtId,
-        },
-    );
+    let mut res = false;
+    if let Some(addr) = jwt_addr.clone() {
+        res = likes::Likes::if_like(
+            &conn,
+            likes::NewLike {
+                address: addr,
+                thought_id: thoughtId,
+            },
+        );
+    }
+
     if res {
         thought_detail.if_like = 1;
     } else {
@@ -764,7 +834,59 @@ pub fn curl_twitter(url: String) -> Option<Vec<u8>> {
             return None;
         }
     }
-    // let s = std::str::from_utf8(dst.as_ref());
-    // println!("{:?}", s);
     Some(dst)
+}
+
+use hex_literal::hex;
+use tokio::runtime::Runtime;
+use web3::contract::{tokens::Tokenizable, Contract, Options};
+use web3::types::U256;
+pub fn check_pass_balance(address: String, pass_token_id: i32) -> Option<u32> {
+    let http_url = "https://avalanche-fuji.infura.io/v3/ce421f619bc34c37a0fb86075d41226f";
+    let http = web3::transports::Http::new(http_url).ok()?;
+    let web3 = web3::Web3::new(http);
+    let contract_address = hex!("0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4").into();
+    let decoded_string = hex::decode(address.as_str()).ok()?;
+    let aa: [u8; 20] = decoded_string.as_slice()[0..20].try_into().ok()?;
+    let user_address: web3::types::Address = aa.into();
+    let abi_json = r#"[
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                }
+              ],
+              "name": "balanceOf",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            }
+          ]
+          "#
+    .as_bytes();
+    let contract = Contract::from_json(web3.eth(), contract_address, abi_json).ok()?;
+    let tokenid = U256::from(pass_token_id);
+    let fut = contract.query(
+        "balanceOf",
+        (user_address, tokenid),
+        None,
+        Options::default(),
+        None,
+    );
+    let runtime = Runtime::new().ok()?;
+    let v: U256 = runtime.block_on(fut).ok()?;
+    Some(v.as_u32())
 }
