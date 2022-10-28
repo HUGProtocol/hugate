@@ -186,7 +186,7 @@ pub fn get_popular_thoughts_list(
         resultMsg: "success".to_string(),
         resultBody: Some(GetPopularThoughtsListBody {
             thoughts: tt,
-            total: cnt as u32,
+            total: _page_count as u32,
         }),
     })
 }
@@ -306,7 +306,7 @@ pub fn get_my_thoughts_list(
         resultMsg: "success".to_string(),
         resultBody: Some(GetPopularThoughtsListBody {
             thoughts: tt,
-            total: cnt as u32,
+            total: _page_count as u32,
         }),
     })
 }
@@ -448,7 +448,10 @@ pub fn get_thought_detail(
                     None => {
                         return Json(HugResponse {
                             resultCode: 500,
-                            resultMsg: format!("{}", "check pass failed"),
+                            resultMsg: format!(
+                                "{} token_id:{}",
+                                "check pass failed", pass_token_id
+                            ),
                             resultBody: None,
                         });
                     }
@@ -456,7 +459,7 @@ pub fn get_thought_detail(
                         if cnt == 0 {
                             return Json(HugResponse {
                                 resultCode: 500,
-                                resultMsg: format!("{}", "no pass"),
+                                resultMsg: format!("{} token_id:{}", "no pass", pass_token_id),
                                 resultBody: None,
                             });
                         }
