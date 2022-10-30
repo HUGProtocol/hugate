@@ -412,14 +412,16 @@ pub fn get_thought_detail(
                 resultBody: None,
             });
         }
-        let is_follow =
-            users::Users::if_follow(jwt_addr.clone().unwrap(), t.address.clone(), &conn);
-        if !is_follow {
-            return Json(HugResponse {
-                resultCode: 500,
-                resultMsg: format!("only follower"),
-                resultBody: None,
-            });
+        if t.address != jwt_addr.clone().unwrap() {
+            let is_follow =
+                users::Users::if_follow(jwt_addr.clone().unwrap(), t.address.clone(), &conn);
+            if !is_follow {
+                return Json(HugResponse {
+                    resultCode: 500,
+                    resultMsg: format!("only follower"),
+                    resultBody: None,
+                });
+            }
         }
     }
     thought_detail.tips = t.tips.clone();
