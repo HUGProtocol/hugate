@@ -331,6 +331,8 @@ pub struct ThoughtDetail {
     pub embeded: String,
     pub create_time: i64,
     pub html_backup: String,
+    pub tokenId: i64,
+    pub viewed: String,
 }
 
 impl Default for ThoughtDetail {
@@ -355,6 +357,8 @@ impl Default for ThoughtDetail {
             embeded: "".to_string(),
             create_time: 0,
             html_backup: "".to_string(),
+            tokenId: -1,
+            viewed: "".to_string(),
             // embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -430,6 +434,7 @@ pub fn get_thought_detail(
     thought_detail.embeded = t.embeded.clone();
     thought_detail.create_time = t.create_at.timestamp();
     thought_detail.html_backup = t.html_backup.clone();
+    thought_detail.viewed = t.viewed.clone();
 
     if t.viewed == "pass" {
         if jwt_addr.is_none() {
@@ -443,25 +448,29 @@ pub fn get_thought_detail(
         if let Ok(pass_vec) = res {
             if let Some(ps) = pass_vec.first() {
                 let pass_token_id = ps.token_id;
-                let pass_cnt = check_pass_balance(jwt_addr.clone().unwrap(), pass_token_id as i32);
-                match pass_cnt {
-                    None => {
-                        return Json(HugResponse {
-                            resultCode: 500,
-                            resultMsg: format!(
-                                "{} token_id:{}",
-                                "check pass failed", pass_token_id
-                            ),
-                            resultBody: None,
-                        });
-                    }
-                    Some(cnt) => {
-                        if cnt == 0 {
+                thought_detail.tokenId = pass_token_id;
+                if t.address != jwt_addr.clone().unwrap() {
+                    let pass_cnt =
+                        check_pass_balance(jwt_addr.clone().unwrap(), pass_token_id as i32);
+                    match pass_cnt {
+                        None => {
                             return Json(HugResponse {
                                 resultCode: 500,
-                                resultMsg: format!("{} token_id:{}", "no pass", pass_token_id),
+                                resultMsg: format!(
+                                    "{} token_id:{}",
+                                    "check pass failed", pass_token_id
+                                ),
                                 resultBody: None,
                             });
+                        }
+                        Some(cnt) => {
+                            if cnt == 0 {
+                                return Json(HugResponse {
+                                    resultCode: 500,
+                                    resultMsg: format!("{} token_id:{}", "no pass", pass_token_id),
+                                    resultBody: None,
+                                });
+                            }
                         }
                     }
                 }
