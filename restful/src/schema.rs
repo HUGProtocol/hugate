@@ -63,6 +63,7 @@ diesel::table! {
         pts -> Int8,
         embeded -> Varchar,
         html_backup -> Varchar,
+        token_id -> Int8,
     }
 }
 

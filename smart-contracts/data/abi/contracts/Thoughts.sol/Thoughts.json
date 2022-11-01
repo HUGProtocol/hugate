@@ -30,50 +30,6 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "addImpl",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint16",
-        "name": "level",
-        "type": "uint16"
-      }
-    ],
-    "name": "ConTemplateAdded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "conAddress",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "admin",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint16",
-        "name": "newLevel",
-        "type": "uint16"
-      }
-    ],
-    "name": "ConUpgrade",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
         "name": "owner",
         "type": "address"
       },
@@ -84,7 +40,7 @@
         "type": "uint256"
       }
     ],
-    "name": "CreateChannelEvent",
+    "name": "CreateCollectionEvent",
     "type": "event"
   },
   {
@@ -123,25 +79,6 @@
       }
     ],
     "name": "MintEvent",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "conOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newConAddress",
-        "type": "address"
-      }
-    ],
-    "name": "NewCon",
     "type": "event"
   },
   {
@@ -274,7 +211,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "passCount",
+        "name": "thoughtCount",
         "type": "uint256"
       },
       {
@@ -284,7 +221,7 @@
         "type": "address"
       }
     ],
-    "name": "UpdateChannelEvent",
+    "name": "UpdateCollectionEvent",
     "type": "event"
   },
   {
@@ -295,7 +232,7 @@
         "type": "uint256"
       }
     ],
-    "name": "ChannelInfo",
+    "name": "CollectionInfo",
     "outputs": [
       {
         "internalType": "address payable",
@@ -309,7 +246,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "passCount",
+        "name": "thoughtCount",
         "type": "uint256"
       },
       {
@@ -322,13 +259,19 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "LastestVersion",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxCount",
     "outputs": [
       {
-        "internalType": "uint16",
+        "internalType": "uint256",
         "name": "",
-        "type": "uint16"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -347,7 +290,7 @@
         "type": "uint256"
       }
     ],
-    "name": "OwnedChannels",
+    "name": "OwnedCollections",
     "outputs": [
       {
         "internalType": "uint256",
@@ -356,50 +299,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "ProxyAdminAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "impl",
-        "type": "address"
-      },
-      {
-        "internalType": "uint16",
-        "name": "version",
-        "type": "uint16"
-      }
-    ],
-    "name": "addConTemplate",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "addPublisher",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -453,49 +352,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "addressList",
-        "type": "address[]"
-      }
-    ],
-    "name": "batchSend",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "channelProxy",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "addr",
         "type": "address"
       }
     ],
-    "name": "checkPass",
+    "name": "checkUserCollections",
     "outputs": [
       {
         "components": [
@@ -520,6 +382,11 @@
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "max",
+            "type": "uint256"
+          },
+          {
             "internalType": "string",
             "name": "tokenURI",
             "type": "string"
@@ -535,7 +402,7 @@
             "type": "address"
           }
         ],
-        "internalType": "struct Cuckoo.PassInfo[]",
+        "internalType": "struct Thoughts.ThoughtInfo[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -546,30 +413,82 @@
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "",
-        "type": "uint16"
-      }
-    ],
-    "name": "conVersionImplement",
-    "outputs": [
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "collectThoughts",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "ifPublisher",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getCollectionInfo",
     "outputs": [
       {
-        "internalType": "bool",
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "total",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "max",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "tokenURI",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct Thoughts.ThoughtInfo",
         "name": "",
-        "type": "bool"
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",
@@ -629,7 +548,7 @@
         "type": "uint256"
       }
     ],
-    "name": "newChannel",
+    "name": "newCollection",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -650,19 +569,6 @@
   {
     "inputs": [],
     "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "revokePublisher",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -772,19 +678,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "subscribeChannel",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"
@@ -832,7 +725,7 @@
         "type": "address"
       }
     ],
-    "name": "updateChannelBasic",
+    "name": "updateCollectionBasic",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -850,20 +743,7 @@
         "type": "address"
       }
     ],
-    "name": "updateChannelOwner",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "userProfile",
-        "type": "address"
-      }
-    ],
-    "name": "updateUserProfile",
+    "name": "updateCollectionOwner",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -872,30 +752,6 @@
     "inputs": [],
     "name": "updateVersion",
     "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "lockAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint16",
-        "name": "version",
-        "type": "uint16"
-      }
-    ],
-    "name": "upgradeCon",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
