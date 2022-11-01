@@ -29,6 +29,7 @@ pub struct Thoughts {
     pub pts: i64,
     pub embeded: String,
     pub html_backup: String,
+    pub token_id: i64,
 }
 
 #[derive(Debug, Insertable, AsChangeset)]
@@ -45,6 +46,7 @@ pub struct NewThought {
     pub html: String,
     pub embeded: String,
     pub html_backup: String,
+    pub token_id: i64,
 }
 
 impl Thoughts {
@@ -109,6 +111,7 @@ impl Thoughts {
                 thoughts::pts,
                 thoughts::embeded,
                 thoughts::html_backup,
+                thoughts::token_id,
             ))
             .into_boxed();
 

@@ -1,9 +1,3 @@
-use std::{fmt::format, ptr::null};
-
-use chrono::{format, NaiveDate, NaiveDateTime};
-use diesel::result::Error;
-use ethabi::Token;
-
 use super::{
     user::{Address, UserInfoDetail},
     *,
@@ -45,8 +39,10 @@ pub struct Thought {
     pub embeded: String,
     pub create_time: i64,
     pub state: String,
-    pub tokenId: i64,
+    #[serde(rename = "tokenId")]
+    pub pass_token_id: i64,
     pub viewed: String,
+    pub thought_nft_id: i64,
 }
 
 impl Default for Thought {
@@ -70,8 +66,9 @@ impl Default for Thought {
             embeded: "".to_string(),
             create_time: 0,
             state: "".to_string(),
-            tokenId: -1,
+            pass_token_id: -1,
             viewed: "".to_string(),
+            thought_nft_id: -1,
             // embeded:r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -153,11 +150,12 @@ pub fn get_popular_thoughts_list(
             x.create_time = y.create_at.timestamp();
             x.state = y.submit_state.clone();
             x.viewed = y.viewed.clone();
+            x.thought_nft_id = y.token_id;
             if y.viewed == "pass" {
                 let res = pass::Pass::get_by_thought(&conn, y.id as i64);
                 if let Ok(list) = res {
                     if list.len() > 0 {
-                        x.tokenId = list.get(0).unwrap().token_id;
+                        x.pass_token_id = list.get(0).unwrap().token_id;
                     }
                 } else {
                     println!(
@@ -287,6 +285,7 @@ pub fn get_my_thoughts_list(
             x.create_time = y.create_at.timestamp();
             x.state = y.submit_state.clone();
             x.viewed = y.viewed.clone();
+            x.thought_nft_id = y.token_id;
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -331,7 +330,9 @@ pub struct ThoughtDetail {
     pub embeded: String,
     pub create_time: i64,
     pub html_backup: String,
-    pub tokenId: i64,
+    #[serde(rename = "tokenId")]
+    pub pass_token_id: i64,
+    pub thought_nft_id: i64,
     pub viewed: String,
 }
 
@@ -357,8 +358,9 @@ impl Default for ThoughtDetail {
             embeded: "".to_string(),
             create_time: 0,
             html_backup: "".to_string(),
-            tokenId: -1,
+            pass_token_id: -1,
             viewed: "".to_string(),
+            thought_nft_id: -1,
             // embeded: r#"<blockquote class="twitter-tweet"><p lang="en" dir="ltr">It was a magical evening yesterday. Thank you again to all the players and fans who were here to share this moment with me. It means the world ❤️😊🙏🏼 <a href="https://t.co/IKFb6jEeXJ">pic.twitter.com/IKFb6jEeXJ</a></p>&mdash; Roger Federer (@rogerfederer) <a href="https://twitter.com/rogerfederer/status/1573632451632570369?ref_src=twsrc%5Etfw">September 24, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>"#.to_string(),
         }
     }
@@ -437,7 +439,7 @@ pub fn get_thought_detail(
     thought_detail.create_time = t.create_at.timestamp();
     thought_detail.html_backup = t.html_backup.clone();
     thought_detail.viewed = t.viewed.clone();
-
+    thought_detail.thought_nft_id = t.token_id;
     if t.viewed == "pass" {
         if jwt_addr.is_none() {
             return Json(HugResponse {
@@ -450,7 +452,7 @@ pub fn get_thought_detail(
         if let Ok(pass_vec) = res {
             if let Some(ps) = pass_vec.first() {
                 let pass_token_id = ps.token_id;
-                thought_detail.tokenId = pass_token_id;
+                thought_detail.pass_token_id = pass_token_id;
                 if t.address != jwt_addr.clone().unwrap() {
                     let pass_cnt =
                         check_pass_balance(jwt_addr.clone().unwrap(), pass_token_id as i32);
@@ -663,6 +665,7 @@ pub struct CreateThoughtReq {
     thought_id_op: Option<i32>,
     html_backup: String,
     token_id_op: Option<i64>,
+    thought_nft_id: Option<i64>,
 }
 #[post("/createThoughts", data = "<req>")]
 pub fn createThoughts(
@@ -688,6 +691,7 @@ pub fn createThoughts(
         html: req.html.clone(),
         embeded: "".to_string(),
         html_backup: req.html_backup.clone(),
+        token_id: -1,
     };
     if let Some(thought_id) = req.thought_id_op {
         if thought_id != 0 {
@@ -701,6 +705,11 @@ pub fn createThoughts(
                 Some(t) => {
                     if t.address != address {
                         return Json(HugResponse::new_failed("not thought owner", ""));
+                    }
+                    if let Some(thought_token_id) = req.thought_nft_id {
+                        if thought_token_id > 0 {
+                            new_thought.token_id = thought_token_id;
+                        }
                     }
                     if t.source_url != new_thought.source_url {
                         if new_thought.source_url.contains("twitter") {
