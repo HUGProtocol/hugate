@@ -711,7 +711,7 @@ pub fn createThoughts(
                             new_thought.token_id = thought_token_id;
                         }
                     }
-                    if t.source_url != new_thought.source_url {
+                    if t.source_url != new_thought.source_url || t.embeded == "" {
                         if new_thought.source_url.contains("twitter") {
                             if let Some(embeded) = curl_twitter(new_thought.source_url.clone()) {
                                 if let Ok(s) = std::str::from_utf8(&embeded) {
