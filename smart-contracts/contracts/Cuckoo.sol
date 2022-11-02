@@ -276,6 +276,27 @@ contract Cuckoo is
         return passInfos;
     }
 
+    function getPassInfo(address addr, uint256 tokenId)
+        public
+        view
+        onlyChannelExist(tokenId)
+        returns (PassInfo memory)
+    {
+        ChannelBasic memory basic = ChannelInfo[tokenId];
+        string memory tokenURI = ERC1155URIStorageUpgradeable.uri(tokenId);
+        uint256 amount = ERC1155Upgradeable.balanceOf(addr, tokenId);
+        PassInfo memory info = PassInfo(
+            tokenId,
+            basic.owner,
+            basic.passCount,
+            amount,
+            tokenURI,
+            basic.price,
+            basic.token
+        );
+        return info;
+    }
+
     /// ***********************
     /// Modifier
     /// ***********************
