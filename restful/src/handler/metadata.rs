@@ -48,6 +48,7 @@ pub fn createMetadata(
                 "",
             ));
         }
+        return Json(HugResponse::new_success());
     }
     //create
     let res = pass::Metadata::new(&conn, &new_metadata);
