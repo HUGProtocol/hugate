@@ -59,7 +59,7 @@ describe('ERC20 Basics', () => {
         const approveAmount = decimal.mul(100);
         const tx1 = await ERC20Contract.connect(Bob).approve(CuckooContract.address, approveAmount.toHexString());
         await tx1.wait();
-        const tx2 = CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString());
+        const tx2 = CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString(), Bob.address);
         await expect(tx2).to.be.revertedWith('channel not exist')
     })
 
@@ -130,7 +130,7 @@ describe('ERC20 Basics', () => {
             const tx1 = await ERC20Contract.connect(Bob).approve(CuckooContract.address, approveAmount.toHexString());
             await tx1.wait();
 
-            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString());
+            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString(), Bob.address);
             await tx2.wait();
 
             //should have token 1
@@ -166,7 +166,7 @@ describe('ERC20 Basics', () => {
             const AliceBalance = await Alice.getBalance();
             const bobBalance = await Bob.getBalance();
             const tokenId = ethers.BigNumber.from(1);
-            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(tokenId.toHexString(), { value: price });
+            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(tokenId.toHexString(), Bob.address, { value: price });
             const receipt = await tx2.wait();
             const gasCostForTxn = receipt.gasUsed.mul(receipt.effectiveGasPrice)
             //should have token 1
