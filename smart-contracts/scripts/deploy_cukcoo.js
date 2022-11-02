@@ -82,9 +82,9 @@ async function checkPass() {
     const newVersion = await CuckooContract.connect(deployer).version();
     console.log(newVersion);
     console.log(CuckooContract.address);
-    const passInfo = await CuckooContract.connect(deployer).checkPass(deployer.address);
+    const passInfo = await CuckooContract.connect(deployer).checkPass("0x5e79bBA16F80C5B290F1d6CF661Fbc22F57Bcb95");
     console.log(passInfo);
-    const singlePassInfo = await CuckooContract.connect(deployer).getPassInfo(deployer.address,ethers.BigNumber.from(0).toHexString());
+    const singlePassInfo = await CuckooContract.connect(deployer).getPassInfo("0x5e79bBA16F80C5B290F1d6CF661Fbc22F57Bcb95",ethers.BigNumber.from(8).toHexString());
     console.log(singlePassInfo);
 }
 

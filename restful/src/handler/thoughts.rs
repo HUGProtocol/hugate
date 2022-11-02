@@ -869,7 +869,11 @@ pub fn check_pass_balance(address: String, pass_token_id: i32) -> Option<u32> {
     let http = web3::transports::Http::new(http_url).ok()?;
     let web3 = web3::Web3::new(http);
     let contract_address = hex!("0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4").into();
-    let decoded_string = hex::decode(address.as_str()).ok()?;
+    if address.len() < 3 {
+        return None;
+    }
+    let hex_address = &address.as_str()[2..];
+    let decoded_string = hex::decode(hex_address).ok()?;
     let aa: [u8; 20] = decoded_string.as_slice()[0..20].try_into().ok()?;
     let user_address: web3::types::Address = aa.into();
     let abi_json = r#"[
