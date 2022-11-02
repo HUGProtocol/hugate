@@ -4,19 +4,19 @@ const { ethers, upgrades } = require('hardhat')
 const { address } = require("hardhat/internal/core/config/config-validation");
 
 //update Cuckoo
-// async function main() {
+async function update() {
 
-//     const [deployer] = await ethers.getSigners();
+    const [deployer] = await ethers.getSigners();
 
-//     console.log("Deploying contracts with the account:", deployer.address);
+    console.log("Deploying contracts with the account:", deployer.address);
 
-//     console.log("Account balance:", (await deployer.getBalance()).toString());
+    console.log("Account balance:", (await deployer.getBalance()).toString());
 
-//     const cuckooSol = await ethers.getContractFactory('Cuckoo');
-//     const CuckooContract = await upgrades.upgradeProxy("0x0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4", cuckooSol);
-//     await CuckooContract.deployed();
-//     console.log("Cuckoo address", CuckooContract.address);
-// }
+    const cuckooSol = await ethers.getContractFactory('Cuckoo');
+    const CuckooContract = await upgrades.upgradeProxy("0x0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4", cuckooSol);
+    await CuckooContract.deployed();
+    console.log("Cuckoo address", CuckooContract.address);
+}
 
 //deploy Cuckoo
 // async function main() {
@@ -69,24 +69,26 @@ async function main() {
 }
 
 //test checkPass
-// async function main() {
-//     //deploy Cuckoo
-//     const [deployer] = await ethers.getSigners();
+async function checkPass() {
+    //deploy Cuckoo
+    const [deployer] = await ethers.getSigners();
 
-//     console.log("Deploying contracts with the account:", deployer.address);
+    console.log("Deploying contracts with the account:", deployer.address);
 
-//     console.log("Account balance:", (await deployer.getBalance()).toString());
+    console.log("Account balance:", (await deployer.getBalance()).toString());
 
-//     const cuckooSol = await ethers.getContractFactory('Cuckoo');
-//     const CuckooContract = await cuckooSol.attach("0x1c433a917314Ad73E1b9878De71fccE629cCB198");
-//     const newVersion = await CuckooContract.connect(deployer).version();
-//     console.log(newVersion);
-//     console.log(CuckooContract.address);
-//     const passInfo = await CuckooContract.connect(deployer).checkPass(deployer.address);
-//     console.log(passInfo);
-// }
+    const cuckooSol = await ethers.getContractFactory('Cuckoo');
+    const CuckooContract = await cuckooSol.attach("0x0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4");
+    const newVersion = await CuckooContract.connect(deployer).version();
+    console.log(newVersion);
+    console.log(CuckooContract.address);
+    const passInfo = await CuckooContract.connect(deployer).checkPass(deployer.address);
+    console.log(passInfo);
+    const singlePassInfo = await CuckooContract.connect(deployer).getPassInfo(deployer.address,ethers.BigNumber.from(0).toHexString());
+    console.log(singlePassInfo);
+}
 
-main()
+checkPass()
     .then(() => process.exit(0))
     .catch((error) => {
         console.error(error);
