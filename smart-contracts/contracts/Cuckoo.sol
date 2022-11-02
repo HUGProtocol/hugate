@@ -197,7 +197,7 @@ contract Cuckoo is
     /// ***********************
     //Channel Subscriber
     /// ***********************
-    function subscribeChannel(uint256 tokenId)
+    function subscribeChannel(uint256 tokenId, address addr)
         public
         payable
         onlyChannelExist(tokenId)
@@ -218,7 +218,7 @@ contract Cuckoo is
                 );
             }
         }
-        _mint(msg.sender, tokenId, 1, "");
+        _mint(addr, tokenId, 1, "");
     }
 
     function batchSend(uint256 tokenId, address[] memory addressList)
