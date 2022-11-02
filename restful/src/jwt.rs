@@ -134,4 +134,12 @@ mod tests {
         let pubkey = format!("{:02X?}", pubkey);
         assert_eq!(account, pubkey)
     }
+    #[test]
+    fn test_check_pass() {
+        let cnt = crate::thoughts::check_pass_balance(
+            "0x5e79bBA16F80C5B290F1d6CF661Fbc22F57Bcb95".to_string(),
+            8,
+        );
+        println!("{:?}", cnt);
+    }
 }
