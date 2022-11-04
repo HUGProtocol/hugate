@@ -868,7 +868,7 @@ pub fn check_pass_balance(address: String, pass_token_id: i32) -> Option<u32> {
     let http_url = "https://avalanche-fuji.infura.io/v3/ce421f619bc34c37a0fb86075d41226f";
     let http = web3::transports::Http::new(http_url).ok()?;
     let web3 = web3::Web3::new(http);
-    let contract_address = hex!("0A14Db069d2b76b7a49EFd4A1bbEedcfe3b49Ab4").into();
+    let contract_address = hex!("d29C5baBfb1E382Cc1e0a7E575A4a45a1bAaA64F").into();
     if address.len() < 3 {
         return None;
     }
