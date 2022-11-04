@@ -59,7 +59,7 @@ describe('ERC20 Basics', () => {
         const approveAmount = decimal.mul(100);
         const tx1 = await ERC20Contract.connect(Bob).approve(CuckooContract.address, approveAmount.toHexString());
         await tx1.wait();
-        const tx2 = CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString(), Bob.address);
+        const tx2 = CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString(), Bob.address, ethers.BigNumber.from(1).toHexString());
         await expect(tx2).to.be.revertedWith('channel not exist')
     })
 
@@ -73,29 +73,6 @@ describe('ERC20 Basics', () => {
         const pass_amount = 10;
         before(async () => {
             [owner, Alice, Bob] = await ethers.getSigners();
-            //should not publisher should not new channel
-            // const txNewChan1 = CuckooContract.connect(Alice).newChannel(tokenUri, price.toHexString(), ERC20Contract.address);
-            // await expect(txNewChan1).to.be.revertedWith('only publisher');
-
-            // //should approve publisher
-            // const txAddPublisher = await CuckooContract.connect(owner).addPublisher(Alice.address);
-            // await txAddPublisher.wait();
-            // await expect(txAddPublisher).not.to.be.reverted;
-
-        })
-
-        it('Should post implementation', async () => {
-            const old_version = await CuckooContract.connect(owner).LastestVersion();
-            expect(old_version).to.be.equal(0);
-            const PostsSol = await ethers.getContractFactory('Posts');
-            const postContract = await PostsSol.deploy();
-            await postContract.deployed();
-            const new_version = 1;
-            const tx = await CuckooContract.connect(owner).addConTemplate(postContract.address, new_version);
-            await tx.wait();
-            expect(await CuckooContract.connect(owner).LastestVersion()).to.be.equal(new_version);
-            const postAddress = await CuckooContract.connect(owner).conVersionImplement(new_version);
-            expect(postAddress).to.be.equal(postContract.address);
         })
 
         it('Should publisher new channel', async () => {
@@ -106,11 +83,8 @@ describe('ERC20 Basics', () => {
             const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
             expect(channelInfo.owner).to.equal(Alice.address);
             expect(channelInfo.price).to.equal(price);
-            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount));
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(1));
             expect(channelInfo.token).to.equal(ERC20Contract.address);
-
-            //check channel proxy address
-            ChannelProxyAddress = await CuckooContract.connect(Alice).channelProxy(tokenId.toHexString());
         })
 
         it('should publisher edit channel info', async function () {
@@ -118,7 +92,7 @@ describe('ERC20 Basics', () => {
             const basic = {
                 owner: Alice.address,
                 price: price,
-                passCount: ethers.BigNumber.from(pass_amount),
+                passCount: ethers.BigNumber.from(1),
                 token: ERC20Contract.address
             };
             await expect(CuckooContract.connect(Alice).updateChannelBasic(ethers.BigNumber.from(0).toHexString(), price, ERC20Contract.address))
@@ -130,7 +104,7 @@ describe('ERC20 Basics', () => {
             const tx1 = await ERC20Contract.connect(Bob).approve(CuckooContract.address, approveAmount.toHexString());
             await tx1.wait();
 
-            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString(), Bob.address);
+            const tx2 = await CuckooContract.connect(Bob).subscribeChannel(ethers.BigNumber.from(0).toHexString(), Bob.address, ethers.BigNumber.from(1).toHexString());
             await tx2.wait();
 
             //should have token 1
@@ -140,7 +114,7 @@ describe('ERC20 Basics', () => {
 
             //should channelInfo pass count added to 2
             const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
-            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount + 1));
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(1 + 1));
 
             //should spend 10 TMP fot Alice channel pass
             const tmpBalance = await ERC20Contract.connect(Bob).balanceOf(Bob.address);
@@ -154,11 +128,8 @@ describe('ERC20 Basics', () => {
             const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
             expect(channelInfo.owner).to.equal(Alice.address);
             expect(channelInfo.price).to.equal(price);
-            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount));
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(1));
             expect(channelInfo.token).to.equal("0x0000000000000000000000000000000000000000");
-
-            //check channel proxy address
-            ChannelProxyAddress = await CuckooContract.connect(Alice).channelProxy(tokenId.toHexString());
         })
 
 
@@ -169,6 +140,7 @@ describe('ERC20 Basics', () => {
             const tx2 = await CuckooContract.connect(Bob).subscribeChannel(
                 tokenId.toHexString(),
                 Bob.address,
+                ethers.BigNumber.from(1).toHexString(),
                 { value: price });
             const receipt = await tx2.wait();
             const gasCostForTxn = receipt.gasUsed.mul(receipt.effectiveGasPrice)
@@ -178,32 +150,13 @@ describe('ERC20 Basics', () => {
 
             //should channelInfo pass count added to 2
             const channelInfo = await CuckooContract.connect(Alice).ChannelInfo(tokenId);
-            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(pass_amount + 1));
+            expect(channelInfo.passCount).to.equal(ethers.BigNumber.from(1 + 1));
 
             //should spend 10 TMP fot Alice channel pass
             const bobBalanceNew = await Bob.getBalance();
             const AliceBalanceNew = await Alice.getBalance();
             expect(AliceBalanceNew).to.equal(price.add(AliceBalance));
             expect(bobBalance).to.equal(price.add(bobBalanceNew).add(gasCostForTxn));
-        });
-
-        const postTokenUri = "ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/6480";
-        it('should publisher post', async () => {
-            const PostsSol = await ethers.getContractFactory('Posts');
-            const AlicePostProxy = PostsSol.attach(ChannelProxyAddress);
-            expect(await AlicePostProxy.connect(Alice).owner()).to.be.equal(Alice.address);
-            expect(await AlicePostProxy.connect(Alice).version()).to.be.equal(1);
-            await expect(AlicePostProxy.connect(Bob).post(postTokenUri)).to.be.reverted;
-            await expect(AlicePostProxy.connect(Alice).post(postTokenUri)).to.emit(AlicePostProxy, "NewPost").withArgs(Alice.address, 0, postTokenUri);
-        });
-
-        const postTokenUriNew = "ipfs://QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/6900";
-        it('should publisher edit', async function () {
-            const PostsSol = await ethers.getContractFactory('Posts');
-            const AlicePostProxy = PostsSol.attach(ChannelProxyAddress);
-            await expect(AlicePostProxy.connect(Bob).editPost(0, postTokenUriNew)).to.be.reverted;
-            await expect(AlicePostProxy.connect(Alice).editPost(0, postTokenUriNew)).to.be.emit(AlicePostProxy, "EditPost").withArgs(Alice.address, 0, postTokenUriNew);
-            expect(await AlicePostProxy.connect(Alice).tokenURI(0)).to.be.equal(postTokenUriNew);
         });
 
         it('should batch send pass', async () => {

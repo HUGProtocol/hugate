@@ -2,7 +2,7 @@
   "manifestVersion": "3.2",
   "admin": {
     "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    "txHash": "0x5e21da8e090a81b84f6fe5a1947cc3f40127dc9428f81d21d5e75bf26491bd2e"
+    "txHash": "0x1d3dc7de0748e138d087c3aec4a87395088b5c02df7c56e12b1b87631632553b"
   },
   "proxies": [
     {
@@ -17,7 +17,7 @@
     },
     {
       "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-      "txHash": "0x134e1f2836a4058afcc715f9cfe7e55b2edbf1350e4a1b272079bb90dfda59c1",
+      "txHash": "0x06471a45fb0053b3809a02b5e6e218048dee556f9ef1fee4394c1764dfa64d43",
       "kind": "transparent"
     }
   ],
@@ -379,9 +379,9 @@
         }
       }
     },
-    "74aef6fa568e2bf76b83405c507553435bfb1ee39b7727932d37198b884ea2b0": {
+    "a46429cdc9ef67457a47a842ec80e4c2031a619ffdce7aabe29654a2c3b164c4": {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "txHash": "0x3777ec10e1ecb8a9f96d12d4753d629872b2e82e47eac01f67efd3b36db59fab",
+      "txHash": "0x3072b83ac9cc1240d5f156cfc1e95ec96b7dd681633127a78efb448dda28ea22",
       "layout": {
         "storage": [
           {
@@ -506,100 +506,44 @@
             "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165StorageUpgradeable.sol:54"
           },
           {
-            "label": "proxyAdmin",
+            "label": "_tokenIds",
             "offset": 0,
             "slot": "301",
-            "type": "t_contract(ProxyAdmin)5239",
-            "contract": "CoreFactory",
-            "src": "contracts/CoreFactory.sol:11"
-          },
-          {
-            "label": "conVersionImplement",
-            "offset": 0,
-            "slot": "302",
-            "type": "t_mapping(t_uint16,t_address)",
-            "contract": "CoreFactory",
-            "src": "contracts/CoreFactory.sol:12"
-          },
-          {
-            "label": "publicImplVersion",
-            "offset": 0,
-            "slot": "303",
-            "type": "t_mapping(t_address,t_uint16)",
-            "contract": "CoreFactory",
-            "src": "contracts/CoreFactory.sol:13"
-          },
-          {
-            "label": "LastestVersion",
-            "offset": 0,
-            "slot": "304",
-            "type": "t_uint16",
-            "contract": "CoreFactory",
-            "src": "contracts/CoreFactory.sol:14"
-          },
-          {
-            "label": "ProxyAdminAddress",
-            "offset": 2,
-            "slot": "304",
-            "type": "t_address",
-            "contract": "CoreFactory",
-            "src": "contracts/CoreFactory.sol:15"
-          },
-          {
-            "label": "UserProfile",
-            "offset": 0,
-            "slot": "305",
-            "type": "t_contract(IUserProfile)9208",
+            "type": "t_struct(Counter)6415_storage",
             "contract": "Cuckoo",
             "src": "contracts/Cuckoo.sol:41"
           },
           {
-            "label": "_tokenIds",
-            "offset": 0,
-            "slot": "306",
-            "type": "t_struct(Counter)6415_storage",
-            "contract": "Cuckoo",
-            "src": "contracts/Cuckoo.sol:43"
-          },
-          {
             "label": "_version",
             "offset": 0,
-            "slot": "307",
+            "slot": "302",
             "type": "t_struct(Counter)6415_storage",
             "contract": "Cuckoo",
-            "src": "contracts/Cuckoo.sol:44"
+            "src": "contracts/Cuckoo.sol:42"
           },
           {
             "label": "ChannelInfo",
             "offset": 0,
-            "slot": "308",
-            "type": "t_mapping(t_uint256,t_struct(ChannelBasic)6879_storage)",
+            "slot": "303",
+            "type": "t_mapping(t_uint256,t_struct(ChannelBasic)6877_storage)",
             "contract": "Cuckoo",
-            "src": "contracts/Cuckoo.sol:45"
+            "src": "contracts/Cuckoo.sol:43"
           },
           {
             "label": "OwnedChannels",
             "offset": 0,
-            "slot": "309",
+            "slot": "304",
             "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
             "contract": "Cuckoo",
-            "src": "contracts/Cuckoo.sol:46"
+            "src": "contracts/Cuckoo.sol:44"
           },
           {
-            "label": "_publisher",
+            "label": "MaxCount",
             "offset": 0,
-            "slot": "310",
-            "type": "t_mapping(t_address,t_bool)",
+            "slot": "305",
+            "type": "t_mapping(t_uint256,t_uint256)",
             "contract": "Cuckoo",
-            "src": "contracts/Cuckoo.sol:47"
-          },
-          {
-            "label": "channelProxy",
-            "offset": 0,
-            "slot": "311",
-            "type": "t_mapping(t_uint256,t_address)",
-            "contract": "Cuckoo",
-            "src": "contracts/Cuckoo.sol:48"
+            "src": "contracts/Cuckoo.sol:45"
           }
         ],
         "types": {
@@ -639,14 +583,6 @@
             "label": "bytes4",
             "numberOfBytes": "4"
           },
-          "t_contract(IUserProfile)9208": {
-            "label": "contract IUserProfile",
-            "numberOfBytes": "20"
-          },
-          "t_contract(ProxyAdmin)5239": {
-            "label": "contract ProxyAdmin",
-            "numberOfBytes": "20"
-          },
           "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
             "label": "mapping(address => uint256[])",
             "numberOfBytes": "32"
@@ -659,24 +595,12 @@
             "label": "mapping(address => mapping(address => bool))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_uint16)": {
-            "label": "mapping(address => uint16)",
-            "numberOfBytes": "32"
-          },
           "t_mapping(t_address,t_uint256)": {
             "label": "mapping(address => uint256)",
             "numberOfBytes": "32"
           },
           "t_mapping(t_bytes4,t_bool)": {
             "label": "mapping(bytes4 => bool)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint16,t_address)": {
-            "label": "mapping(uint16 => address)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_uint256,t_address)": {
-            "label": "mapping(uint256 => address)",
             "numberOfBytes": "32"
           },
           "t_mapping(t_uint256,t_mapping(t_address,t_uint256))": {
@@ -687,15 +611,19 @@
             "label": "mapping(uint256 => string)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(ChannelBasic)6879_storage)": {
+          "t_mapping(t_uint256,t_struct(ChannelBasic)6877_storage)": {
             "label": "mapping(uint256 => struct Cuckoo.ChannelBasic)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
             "numberOfBytes": "32"
           },
           "t_string_storage": {
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(ChannelBasic)6879_storage": {
+          "t_struct(ChannelBasic)6877_storage": {
             "label": "struct Cuckoo.ChannelBasic",
             "members": [
               {
@@ -736,10 +664,6 @@
               }
             ],
             "numberOfBytes": "32"
-          },
-          "t_uint16": {
-            "label": "uint16",
-            "numberOfBytes": "2"
           },
           "t_uint256": {
             "label": "uint256",
