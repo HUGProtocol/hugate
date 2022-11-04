@@ -16,8 +16,7 @@ import "./interfaces/hooks/IUserProfile.sol";
 contract Cuckoo is
     ERC1155URIStorageUpgradeable,
     OwnableUpgradeable,
-    ERC165StorageUpgradeable,
-    CoreFactory
+    ERC165StorageUpgradeable
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using Counters for Counters.Counter;
@@ -33,19 +32,17 @@ contract Cuckoo is
         address owner;
         uint256 total;
         uint256 amount;
+        uint256 max;
         string tokenURI;
         uint256 price;
         address token;
     }
 
-    IUserProfile UserProfile;
-
     Counters.Counter private _tokenIds;
     Counters.Counter private _version;
     mapping(uint256 => ChannelBasic) public ChannelInfo;
     mapping(address => uint256[]) public OwnedChannels;
-    mapping(address => bool) private _publisher;
-    mapping(uint256 => address) public channelProxy;
+    mapping(uint256 => uint256) public MaxCount;
 
     event UpdateChannelEvent(
         address indexed owner,
@@ -65,13 +62,14 @@ contract Cuckoo is
         ERC165StorageUpgradeable.__ERC165Storage_init();
         ERC1155URIStorageUpgradeable.__ERC1155URIStorage_init();
         OwnableUpgradeable.__Ownable_init();
-        CoreFactory.__FactoryInitialize();
         _version.increment();
     }
 
     function _beforeMint(uint256 tokenId, uint256 amount) internal virtual {
         ChannelBasic storage basic = ChannelInfo[tokenId];
         basic.passCount += amount;
+        uint256 max = MaxCount[tokenId];
+        require(basic.passCount <= max);
     }
 
     function _mint(
@@ -107,19 +105,6 @@ contract Cuckoo is
         _version.increment();
     }
 
-    function updateUserProfile(address userProfile) public onlyOwner {
-        UserProfile = IUserProfile(userProfile);
-    }
-
-    function addPublisher(address user) public onlyOwner {
-        _publisher[user] = true;
-        UserProfile.toPublisher(user);
-    }
-
-    function revokePublisher(address user) public onlyOwner {
-        _publisher[user] = false;
-    }
-
     /// ***********************
     //Channel Owner
     /// ***********************
@@ -152,12 +137,10 @@ contract Cuckoo is
 
         setTokenURI(newId, tokenURI);
 
-        _mint(msg.sender, newId, amount, "");
+        MaxCount[newId] = amount;
+        _mint(msg.sender, newId, 1, "");
         _tokenIds.increment();
 
-        //new channel contract
-        address channelAddress = CoreFactory._createCon();
-        channelProxy[newId] = channelAddress;
         emit CreateChannelEvent(msg.sender, newId);
     }
 
@@ -197,16 +180,19 @@ contract Cuckoo is
     /// ***********************
     //Channel Subscriber
     /// ***********************
-    function subscribeChannel(uint256 tokenId, address addr)
-        public
-        payable
-        onlyChannelExist(tokenId)
-    {
+    function subscribeChannel(
+        uint256 tokenId,
+        address addr,
+        uint256 amount
+    ) public payable onlyChannelExist(tokenId) {
         ChannelBasic memory basic = ChannelInfo[tokenId];
-
+        require(amount > 0);
         if (basic.price != 0) {
             if (basic.token == address(0)) {
-                require(msg.value == basic.price, "value not equal to price");
+                require(
+                    msg.value == basic.price * amount,
+                    "value not equal to price"
+                );
                 (bool sent, ) = basic.owner.call{value: basic.price}("");
                 require(sent, "Failed to send Ether");
             } else {
@@ -214,16 +200,16 @@ contract Cuckoo is
                 paymentToken.safeTransferFrom(
                     msg.sender,
                     basic.owner,
-                    basic.price
+                    basic.price * amount
                 );
             }
         }
-        _mint(addr, tokenId, 1, "");
+        _mint(addr, tokenId, amount, "");
     }
 
     function batchSend(uint256 tokenId, address[] memory addressList)
         public
-        onlyChannelExist(tokenId)
+        onlyChannelOwner(tokenId)
     {
         require(addressList.length < 10, "receiver expand");
         for (uint256 i = 0; i < addressList.length; ++i) {
@@ -233,13 +219,7 @@ contract Cuckoo is
                 uint256[] storage list = OwnedChannels[receiver];
                 list.push(tokenId);
             }
-            ERC1155Upgradeable.safeTransferFrom(
-                msg.sender,
-                receiver,
-                tokenId,
-                1,
-                ""
-            );
+            _mint(receiver, tokenId, 1, "");
         }
     }
 
@@ -250,10 +230,6 @@ contract Cuckoo is
         return _version.current();
     }
 
-    function ifPublisher() public view returns (bool) {
-        return _publisher[msg.sender];
-    }
-
     function checkPass(address addr) public view returns (PassInfo[] memory) {
         uint256[] memory ownedTokens = OwnedChannels[addr];
         PassInfo[] memory passInfos = new PassInfo[](ownedTokens.length);
@@ -262,11 +238,13 @@ contract Cuckoo is
             ChannelBasic memory basic = ChannelInfo[tokenId];
             string memory tokenURI = ERC1155URIStorageUpgradeable.uri(tokenId);
             uint256 amount = ERC1155Upgradeable.balanceOf(addr, tokenId);
+            uint256 max = MaxCount[tokenId];
             PassInfo memory info = PassInfo(
                 tokenId,
                 basic.owner,
                 basic.passCount,
                 amount,
+                max,
                 tokenURI,
                 basic.price,
                 basic.token
@@ -285,11 +263,13 @@ contract Cuckoo is
         ChannelBasic memory basic = ChannelInfo[tokenId];
         string memory tokenURI = ERC1155URIStorageUpgradeable.uri(tokenId);
         uint256 amount = ERC1155Upgradeable.balanceOf(addr, tokenId);
+        uint256 max = MaxCount[tokenId];
         PassInfo memory info = PassInfo(
             tokenId,
             basic.owner,
             basic.passCount,
             amount,
+            max,
             tokenURI,
             basic.price,
             basic.token
@@ -303,11 +283,6 @@ contract Cuckoo is
     modifier onlyChannelExist(uint256 channelId) {
         ChannelBasic memory basic = ChannelInfo[channelId];
         require(basic.owner != address(0), "channel not exist");
-        _;
-    }
-
-    modifier onlyPublisher() {
-        require(_publisher[msg.sender] == true, "only publisher");
         _;
     }
 
