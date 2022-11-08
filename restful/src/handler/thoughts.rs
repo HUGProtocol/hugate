@@ -366,6 +366,68 @@ impl Default for ThoughtDetail {
     }
 }
 
+pub fn get_thought_detail_by_id(
+    conn: &PgConnection,
+    thoughtId: i32,
+    jwt_addr: Option<String>,
+) -> Option<ThoughtDetail> {
+    let mut thought_detail = ThoughtDetail::default();
+    let r = thoughts::Thoughts::get_by_id(conn, thoughtId).ok()?;
+    if r.len() == 0 {
+        return None;
+    }
+    let t = r.get(0).unwrap();
+    thought_detail.tips = t.tips.clone();
+    thought_detail.content = t.content.clone();
+    thought_detail.thought_type = t.thought_type.clone();
+    thought_detail.sourceUrl = t.source_url.clone();
+    thought_detail.snapshot = t.snapshot.clone();
+    thought_detail.likeNum = t.likes;
+    thought_detail.thought_id = t.id;
+    thought_detail.html = t.html.clone();
+    thought_detail.pts = t.pts;
+    thought_detail.embeded = t.embeded.clone();
+    thought_detail.create_time = t.create_at.timestamp();
+    thought_detail.html_backup = t.html_backup.clone();
+    thought_detail.viewed = t.viewed.clone();
+    thought_detail.thought_nft_id = t.token_id;
+
+    let res = users::Users::get_user_by_address(conn, t.address.clone());
+    if res.is_ok() {
+        if let Some(u) = res.unwrap().get(0) {
+            thought_detail.userName = u.username.clone();
+            thought_detail.avatar = u.profile_image.clone();
+            thought_detail.userInfo = u.clone();
+        }
+    }
+
+    let mut res = false;
+    if let Some(addr) = jwt_addr.clone() {
+        res = likes::Likes::if_like(
+            &conn,
+            likes::NewLike {
+                address: addr,
+                thought_id: thoughtId,
+            },
+        );
+    }
+
+    if res {
+        thought_detail.if_like = 1;
+    } else {
+        thought_detail.if_like = 0;
+    }
+
+    let res = comments::Comment::get_count_by_thought_id(conn, t.id);
+    if let Err(e) = res {
+        println!("{}", e);
+    } else {
+        thought_detail.commentNum = res.unwrap() as i32;
+    }
+
+    Some(thought_detail)
+}
+
 #[get("/getThoughtDetail?<thoughtId>")]
 pub fn get_thought_detail(
     cookies: Cookies,
@@ -672,10 +734,10 @@ pub fn createThoughts(
     cookies: Cookies,
     conn: DbConn,
     req: Form<CreateThoughtReq>,
-) -> Json<HugResponse<OneLineResultBody>> {
+) -> Json<HugResponse<Option<ThoughtDetail>>> {
     let res = check_cookies(&cookies);
     if res.is_err() {
-        return Json(HugResponse::new_failed("check token failed", ""));
+        return Json(HugResponse::new_none("check token failed"));
     }
     let role = res.unwrap();
     let address = role.address.clone();
@@ -697,14 +759,14 @@ pub fn createThoughts(
         if thought_id != 0 {
             let res = thoughts::Thoughts::get_by_id(&conn, thought_id);
             if res.is_err() {
-                return Json(HugResponse::new_failed("no such thought", ""));
+                return Json(HugResponse::new_none("no such thought"));
             }
 
             match res.unwrap().get(0) {
-                None => return Json(HugResponse::new_failed("no such thought", "")),
+                None => return Json(HugResponse::new_none("no such thought")),
                 Some(t) => {
                     if t.address != address {
-                        return Json(HugResponse::new_failed("not thought owner", ""));
+                        return Json(HugResponse::new_none("not thought owner"));
                     }
                     if let Some(thought_token_id) = req.thought_nft_id {
                         if thought_token_id > 0 {
@@ -734,7 +796,12 @@ pub fn createThoughts(
                     }
                 }
             }
-            return Json(HugResponse::new_success());
+            let detail = get_thought_detail_by_id(&conn, thought_id, Some(address));
+            return Json(HugResponse {
+                resultCode: 200,
+                resultMsg: "success".to_string(),
+                resultBody: detail,
+            });
         }
     }
     if new_thought.source_url.contains("twitter") {
@@ -746,22 +813,28 @@ pub fn createThoughts(
     }
     let res = thoughts::Thoughts::create(&conn, new_thought);
     if res.is_err() {
-        return Json(HugResponse::new_failed("create thought failed", ""));
+        return Json(HugResponse::new_none("create thought failed"));
     }
+    let thought_id = res.unwrap();
 
     if let Some(pass_token_id) = req.token_id_op {
         if pass_token_id >= 0 {
             pass::Pass::put_pass(
                 &conn,
                 pass::NewPass {
-                    thought_id: res.unwrap() as i64,
+                    thought_id: thought_id as i64,
                     token_id: pass_token_id,
                 },
             );
         }
     }
 
-    Json(HugResponse::new_success())
+    let detail = get_thought_detail_by_id(&conn, thought_id, Some(address));
+    return Json(HugResponse {
+        resultCode: 200,
+        resultMsg: "success".to_string(),
+        resultBody: detail,
+    });
 }
 
 #[get("/getPassTokenId?<thoughtId>")]
@@ -860,6 +933,7 @@ pub fn curl_twitter(url: String) -> Option<Vec<u8>> {
     Some(dst)
 }
 
+use diesel::PgConnection;
 use hex_literal::hex;
 use tokio::runtime::Runtime;
 use web3::contract::{tokens::Tokenizable, Contract, Options};
