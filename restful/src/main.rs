@@ -82,6 +82,7 @@ fn rocket() -> rocket::Rocket {
                 thoughts::embededCard,
                 thoughts::getPassThoughtId,
                 thoughts::getPassTokenId,
+                thoughts::changeThoughtState,
                 metadata::get_metadata_by_address,
                 metadata::createMetadata,
             ],

@@ -286,6 +286,20 @@ pub fn get_my_thoughts_list(
             x.state = y.submit_state.clone();
             x.viewed = y.viewed.clone();
             x.thought_nft_id = y.token_id;
+            if y.viewed == "pass" {
+                let res = pass::Pass::get_by_thought(&conn, y.id as i64);
+                if let Ok(list) = res {
+                    if list.len() > 0 {
+                        x.pass_token_id = list.get(0).unwrap().token_id;
+                    }
+                } else {
+                    println!(
+                        "{}",
+                        format!("viewed value pass but tokenId not fount {}", y.id)
+                    );
+                    // x.viewed = "all".to_string();
+                }
+            }
             let res = users::Users::get_user_by_address(&conn, y.address.clone());
             if res.is_ok() {
                 if let Some(us) = res.unwrap().get(0) {
@@ -707,6 +721,85 @@ pub fn reward(
         );
         users::Users::reduce_pts(address.clone(), &conn, reward_req.ptsNum as i64);
         users::Users::add_pts(thought.address.clone(), &conn, reward_req.ptsNum as i64);
+    }
+    Json(HugResponse::new_success())
+}
+
+#[derive(FromForm)]
+pub struct ChangeStateReq {
+    thought_id: i32,
+    submit_state_op: Option<String>,
+    viewed_op: Option<String>,
+    thought_id_op: Option<i64>,
+    pass_id_op: Option<i64>,
+}
+
+#[post("/changeThoughtState", data = "<req>")]
+pub fn changeThoughtState(
+    cookies: Cookies,
+    conn: DbConn,
+    req: Form<ChangeStateReq>,
+) -> Json<HugResponse<OneLineResultBody>> {
+    let res = check_cookies(&cookies);
+    if res.is_err() {
+        return Json(HugResponse::new_failed("check token failed", ""));
+    }
+    let role = res.unwrap();
+    let address = role.address.clone();
+    let res = thoughts::Thoughts::get_by_id(&conn, req.thought_id);
+    if res.is_err() {
+        return Json(HugResponse::new_failed("no such thought id", ""));
+    }
+
+    match res.unwrap().get(0) {
+        None => return Json(HugResponse::new_failed("no such thought id", "")),
+        Some(t) => {
+            if t.address != address {
+                return Json(HugResponse::new_failed("not thought owner", ""));
+            }
+            if let Some(new_state) = req.submit_state_op.clone() {
+                if new_state != "" {
+                    let ok = thoughts::Thoughts::update_state(&conn, new_state, req.thought_id);
+                    if !ok {
+                        return Json(HugResponse::new_failed("update state failed", ""));
+                    }
+                }
+            }
+
+            if let Some(new_viewed) = req.viewed_op.clone() {
+                if new_viewed != "" {
+                    let ok = thoughts::Thoughts::update_viewed(&conn, new_viewed, req.thought_id);
+                    if !ok {
+                        return Json(HugResponse::new_failed("update viewed failed", ""));
+                    }
+                }
+            }
+
+            if let Some(new_thought_id) = req.thought_id_op {
+                if new_thought_id > 0 {
+                    let ok =
+                        thoughts::Thoughts::update_token_id(&conn, new_thought_id, req.thought_id);
+                    if !ok {
+                        return Json(HugResponse::new_failed("update thought id failed", ""));
+                    }
+                }
+            }
+
+            if let Some(new_pass_id) = req.pass_id_op {
+                if new_pass_id > 0 {
+                    let ok = pass::Pass::put_pass(
+                        &conn,
+                        pass::NewPass {
+                            thought_id: req.thought_id as i64,
+                            token_id: new_pass_id,
+                        },
+                    );
+                    if !ok {
+                        return Json(HugResponse::new_failed("update pass token id failed", ""));
+                    }
+                }
+            }
+        }
     }
     Json(HugResponse::new_success())
 }
