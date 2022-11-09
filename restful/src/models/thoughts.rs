@@ -171,6 +171,30 @@ impl Thoughts {
             .is_ok()
     }
 
+    pub fn update_state(conn: &PgConnection, submit_state: String, thought_id: i32) -> bool {
+        diesel::update(thoughts::dsl::thoughts)
+            .filter(thoughts::id.eq(thought_id))
+            .set(thoughts::submit_state.eq(submit_state))
+            .execute(conn)
+            .is_ok()
+    }
+
+    pub fn update_viewed(conn: &PgConnection, viewed: String, thought_id: i32) -> bool {
+        diesel::update(thoughts::dsl::thoughts)
+            .filter(thoughts::id.eq(thought_id))
+            .set(thoughts::viewed.eq(viewed))
+            .execute(conn)
+            .is_ok()
+    }
+
+    pub fn update_token_id(conn: &PgConnection, token_id: i64, thought_id: i32) -> bool {
+        diesel::update(thoughts::dsl::thoughts)
+            .filter(thoughts::id.eq(thought_id))
+            .set(thoughts::token_id.eq(token_id))
+            .execute(conn)
+            .is_ok()
+    }
+
     pub fn add_like(conn: &PgConnection, thought_id: i32) -> bool {
         diesel::update(thoughts::dsl::thoughts)
             .filter(thoughts::id.eq(thought_id))
