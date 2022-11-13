@@ -72,7 +72,11 @@ impl Thoughts {
             query = query.filter(thoughts::thought_type.eq(address));
         }
         if let Some(submit_state) = submit_state {
-            query = query.filter(thoughts::submit_state.eq(submit_state));
+            if submit_state == "publish" {
+                query = query.filter(thoughts::submit_state.eq("publish")).or_filter(thoughts::submit_state.eq("mint"));
+            } else {
+                query = query.filter(thoughts::submit_state.eq(submit_state));
+            }
         }
         query = query.filter(not(thoughts::viewed.eq("self")));
         query = query.filter(not(thoughts::submit_state.eq("save")));
@@ -142,7 +146,11 @@ impl Thoughts {
             query = query.filter(thoughts::thought_type.eq(thought_type));
         }
         if let Some(submit_state) = state {
-            query = query.filter(thoughts::submit_state.eq(submit_state));
+            if submit_state == "publish" {
+                query = query.filter(thoughts::submit_state.eq("publish")).or_filter(thoughts::submit_state.eq("mint"));
+            } else {
+                query = query.filter(thoughts::submit_state.eq(submit_state));
+            }
         }
         query = query.filter(thoughts::address.eq(address));
         let query_page = query.paginate(page).per_page(per_page);

@@ -209,17 +209,31 @@ contract Cuckoo is
 
     function batchSend(uint256 tokenId, address[] memory addressList)
         public
-        onlyChannelOwner(tokenId)
+    // onlyChannelOwner(tokenId)
     {
+        ChannelBasic memory basic = ChannelInfo[tokenId];
+        if (msg.sender == basic.owner) {
+            uint256 balance = ERC1155Upgradeable.balanceOf(msg.sender, tokenId);
+            if (balance < addressList.length) {
+                _mint(msg.sender, tokenId, addressList.length - balance, "");
+            }
+        }
         require(addressList.length < 10, "receiver expand");
         for (uint256 i = 0; i < addressList.length; ++i) {
             address receiver = addressList[i];
-            uint256 amount = ERC1155Upgradeable.balanceOf(receiver, tokenId);
-            if (amount == 0) {
-                uint256[] storage list = OwnedChannels[receiver];
-                list.push(tokenId);
-            }
-            _mint(receiver, tokenId, 1, "");
+            // uint256 amount = ERC1155Upgradeable.balanceOf(receiver, tokenId);
+            // if (amount == 0) {
+            //     uint256[] storage list = OwnedChannels[receiver];
+            //     list.push(tokenId);
+            // }
+            // _mint(receiver, tokenId, 1, "");
+            ERC1155Upgradeable.safeTransferFrom(
+                msg.sender,
+                receiver,
+                tokenId,
+                1,
+                ""
+            );
         }
     }
 

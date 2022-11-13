@@ -34,6 +34,7 @@ diesel::table! {
         meta_json -> Varchar,
         address -> Varchar,
         token_id -> Int8,
+        nft_type -> Varchar,
     }
 }
 

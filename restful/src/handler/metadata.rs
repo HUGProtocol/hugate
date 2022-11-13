@@ -38,6 +38,7 @@ pub fn createMetadata(
         meta_json: req.meta_json.clone(),
         address: address.clone(),
         token_id: req.token_id,
+        nft_type: req.nft_type.clone(),
     };
     //update
     if req.id > 0 {
