@@ -49,6 +49,7 @@ pub struct Metadata {
     pub meta_json: String,
     pub address: String,
     pub token_id: i64,
+    pub nft_type: String,
 }
 
 #[derive(Debug, Insertable, AsChangeset, Serialize, Clone)]
@@ -57,6 +58,7 @@ pub struct NewMetadata {
     pub meta_json: String,
     pub address: String,
     pub token_id: i64,
+    pub nft_type: String,
 }
 
 impl Metadata {
