@@ -1,5 +1,3 @@
-use diesel::PgConnection;
-
 use super::init_pool;
 use crate::models::users::{NewFollow, NewUser, Users};
 

@@ -1,21 +1,11 @@
 use crate::handler::user::UserInfoAbstract;
 use crate::schema::follow::dsl::follow as all_follows;
-use crate::schema::users::dsl::address;
 use crate::schema::users::dsl::users as all_users;
 use crate::schema::{self, follow, users};
 use chrono::NaiveDateTime;
-use diesel::pg::upsert::*;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
-// this is to get users from the database
-// #[derive(Serialize, Queryable)]
-// pub struct UserProfile {
-//     pub id: i32,
-//     pub username: String,
-//     pub password: String,
-//     pub first_name: String,
-// }
 
 #[derive(Debug, Queryable, Serialize, Default, Clone)]
 pub struct Users {

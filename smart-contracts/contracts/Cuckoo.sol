@@ -221,12 +221,14 @@ contract Cuckoo is
         require(addressList.length < 10, "receiver expand");
         for (uint256 i = 0; i < addressList.length; ++i) {
             address receiver = addressList[i];
-            // uint256 amount = ERC1155Upgradeable.balanceOf(receiver, tokenId);
-            // if (amount == 0) {
-            //     uint256[] storage list = OwnedChannels[receiver];
-            //     list.push(tokenId);
-            // }
-            // _mint(receiver, tokenId, 1, "");
+            if (receiver == msg.sender) {
+                continue;
+            }
+            uint256 amount = ERC1155Upgradeable.balanceOf(receiver, tokenId);
+            if (amount == 0) {
+                uint256[] storage list = OwnedChannels[receiver];
+                list.push(tokenId);
+            }
             ERC1155Upgradeable.safeTransferFrom(
                 msg.sender,
                 receiver,

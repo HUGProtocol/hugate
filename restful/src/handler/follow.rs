@@ -4,7 +4,7 @@ use crate::{
 };
 
 use super::{
-    user::{UserInfoAbstract, UserInfoDetail},
+    user::{UserInfoAbstract},
     *,
 };
 
@@ -57,17 +57,17 @@ pub fn follow_or_not(
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct getFollowListBody {
+pub struct GetFollowListBody {
     pub follows: Vec<UserInfoAbstract>,
     pub total: u32,
 }
 
-impl getFollowListBody {
+impl GetFollowListBody {
     pub fn default(num: u32) -> Self {
         let followers = (0..num)
             .map(|_| UserInfoAbstract::random())
             .collect::<Vec<UserInfoAbstract>>();
-        getFollowListBody {
+        GetFollowListBody {
             follows: followers,
             total: num as u32,
         }
@@ -75,7 +75,7 @@ impl getFollowListBody {
 }
 
 #[derive(FromForm)]
-pub struct get_follow_list_req {
+pub struct GetFollowListReq {
     #[form(field = "type")]
     pub follow_type: i32,
 }
@@ -84,14 +84,14 @@ pub struct get_follow_list_req {
 pub fn get_follow_list(
     cookies: Cookies,
     conn: DbConn,
-    req: Option<Form<get_follow_list_req>>,
-) -> Json<HugResponse<getFollowListBody>> {
+    req: Option<Form<GetFollowListReq>>,
+) -> Json<HugResponse<GetFollowListBody>> {
     let res = check_cookies(&cookies);
     if res.is_err() {
         return Json(HugResponse {
             resultCode: 500,
             resultMsg: "check token failed".to_string(),
-            resultBody: getFollowListBody::default(0),
+            resultBody: GetFollowListBody::default(0),
         });
     }
     let role = res.unwrap();
@@ -99,7 +99,7 @@ pub fn get_follow_list(
         return Json(HugResponse {
             resultCode: 500,
             resultMsg: "not set type".to_string(),
-            resultBody: getFollowListBody::default(0),
+            resultBody: GetFollowListBody::default(0),
         });
     }
 
@@ -108,7 +108,7 @@ pub fn get_follow_list(
         return Json(HugResponse {
             resultCode: 500,
             resultMsg: "type incorrect".to_string(),
-            resultBody: getFollowListBody::default(0),
+            resultBody: GetFollowListBody::default(0),
         });
     }
     if typep == 0 {
@@ -117,7 +117,7 @@ pub fn get_follow_list(
             return Json(HugResponse {
                 resultCode: 500,
                 resultMsg: "get follower failed".to_string(),
-                resultBody: getFollowListBody::default(0),
+                resultBody: GetFollowListBody::default(0),
             });
         }
         let followers = res.unwrap();
@@ -125,7 +125,7 @@ pub fn get_follow_list(
         return Json(HugResponse {
             resultCode: 200,
             resultMsg: "success".to_string(),
-            resultBody: getFollowListBody {
+            resultBody: GetFollowListBody {
                 follows: followers,
                 total: count as u32,
             },
@@ -137,7 +137,7 @@ pub fn get_follow_list(
         return Json(HugResponse {
             resultCode: 500,
             resultMsg: "get follower failed".to_string(),
-            resultBody: getFollowListBody::default(0),
+            resultBody: GetFollowListBody::default(0),
         });
     }
     let followee = res.unwrap();
@@ -145,7 +145,7 @@ pub fn get_follow_list(
     Json(HugResponse {
         resultCode: 200,
         resultMsg: "success".to_string(),
-        resultBody: getFollowListBody {
+        resultBody: GetFollowListBody {
             follows: followee,
             total: count as u32,
         },

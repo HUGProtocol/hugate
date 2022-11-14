@@ -17,13 +17,13 @@ pub struct Comment {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct getThoughtsCommentsBody {
+pub struct GetThoughtsCommentsBody {
     pub total: u32,
     pub if_like: i32,
     pub comments: Vec<Comment>,
 }
 
-impl getThoughtsCommentsBody {
+impl GetThoughtsCommentsBody {
     pub fn default(num: u32) -> Self {
         let u = UserInfoDetail::default();
         let comment_list = (0..num)
@@ -40,7 +40,7 @@ impl getThoughtsCommentsBody {
                 }
             })
             .collect();
-        getThoughtsCommentsBody {
+        GetThoughtsCommentsBody {
             total: num,
             if_like: 0,
             comments: comment_list,
@@ -53,7 +53,7 @@ pub fn get_thought_comments(
     cookies: Cookies,
     conn: DbConn,
     thoughtId: i32,
-) -> Json<HugResponse<Option<getThoughtsCommentsBody>>> {
+) -> Json<HugResponse<Option<GetThoughtsCommentsBody>>> {
     //check cookies
     let jwt_res = check_cookies(&cookies);
     let mut jwt_addr = None;
@@ -72,7 +72,7 @@ pub fn get_thought_comments(
     }
     let comment_db = res.unwrap();
     let cnt = comment_db.len();
-    let mut body = getThoughtsCommentsBody::default(cnt as u32);
+    let body = GetThoughtsCommentsBody::default(cnt as u32);
     let comment_list = body
         .comments
         .into_iter()
@@ -122,7 +122,7 @@ pub fn get_thought_comments(
     Json(HugResponse {
         resultCode: 200,
         resultMsg: "success".to_string(),
-        resultBody: Some(getThoughtsCommentsBody {
+        resultBody: Some(GetThoughtsCommentsBody {
             total: cnt as u32,
             if_like: if_like,
             comments: comment_list,
@@ -148,7 +148,7 @@ pub fn thoughts_comment(
         return Json(HugResponse::new_failed("check token failed", ""));
     }
     let role = res.unwrap();
-    let mut address = role.address.clone();
+    let address = role.address.clone();
 
     let res = comments::Comment::create(
         &conn,
@@ -165,7 +165,7 @@ pub fn thoughts_comment(
 }
 
 #[derive(FromForm)]
-pub struct delCommentReq {
+pub struct DelCommentReq {
     pub commentId: i32,
 }
 
@@ -173,15 +173,13 @@ pub struct delCommentReq {
 pub fn del_comment(
     cookies: Cookies,
     conn: DbConn,
-    del_comment_req: Form<delCommentReq>,
+    del_comment_req: Form<DelCommentReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
     //check cookies
     let res = check_cookies(&cookies);
     if res.is_err() {
         return Json(HugResponse::new_failed("check token failed", ""));
     }
-    let role = res.unwrap();
-    let mut address = role.address.clone();
 
     let res = comments::Comment::delete(&conn, del_comment_req.commentId);
     if res == false {

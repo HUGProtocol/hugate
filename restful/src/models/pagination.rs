@@ -36,7 +36,6 @@ impl<T> Paginated<T> {
     where
         Self: LoadQuery<PgConnection, (U, i64)>,
     {
-        let per_page = self.per_page;
         let results = self.load::<(U, i64)>(conn)?;
         let total = results.get(0).map(|x| x.1).unwrap_or(0);
         let records = results.into_iter().map(|x| x.0).collect();

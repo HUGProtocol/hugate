@@ -1,15 +1,9 @@
-use chrono::{NaiveDate, NaiveDateTime, Utc};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use rocket::http::{Cookie, Cookies};
+use chrono::Utc;
+use jsonwebtoken::{EncodingKey, Header};
+use rocket::http::Cookies;
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::format,
-    io::{Error, ErrorKind},
-};
-use web3::{
-    futures::future::ok,
-    signing::{keccak256, recover},
-};
+use std::io::{Error, ErrorKind};
+use web3::signing::{keccak256, recover};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserRolesToken {

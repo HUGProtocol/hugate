@@ -1,15 +1,9 @@
-use super::pagination::Paginate;
 use crate::schema::metadata::dsl::metadata as all_metadata;
 use crate::schema::pass::dsl::pass as all_pass;
-use crate::schema::thoughts::dsl::thoughts as all_thoughts;
-use crate::schema::users::dsl::users as all_users;
-use crate::schema::{self, follow, metadata, pass, thoughts, users};
-use chrono::NaiveDateTime;
-use diesel::dsl::not;
+use crate::schema::{metadata, pass};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
-use web3::types::Res;
 
 #[derive(Debug, Queryable)]
 pub struct Pass {
@@ -97,5 +91,21 @@ impl Metadata {
             .filter(metadata::address.eq(address))
             .distinct()
             .load(conn)
+    }
+
+    pub fn get_by_token_id_vec(
+        conn: &PgConnection,
+        token_id_vec: Vec<i32>,
+    ) -> Result<Vec<Metadata>, Error> {
+        let mut query = all_metadata.into_boxed();
+        let mut cnt = 0;
+        for token_id in token_id_vec {
+            cnt += 1;
+            if cnt > 10 {
+                break;
+            }
+            query = query.or_filter(metadata::token_id.eq(token_id as i64));
+        }
+        query.get_results(conn)
     }
 }

@@ -1,10 +1,7 @@
 use super::pagination::Paginate;
-use crate::handler::user::UserInfoAbstract;
-use crate::schema::follow::dsl::follow as all_follows;
 use crate::schema::thoughts::dsl::thoughts as all_thoughts;
 use crate::schema::thoughts::likes;
-use crate::schema::users::dsl::users as all_users;
-use crate::schema::{self, follow, likes as likes_table, thoughts, users};
+use crate::schema::{likes as likes_table, thoughts};
 use chrono::NaiveDateTime;
 use diesel::dsl::not;
 use diesel::pg::PgConnection;
@@ -73,7 +70,9 @@ impl Thoughts {
         }
         if let Some(submit_state) = submit_state {
             if submit_state == "publish" {
-                query = query.filter(thoughts::submit_state.eq("publish")).or_filter(thoughts::submit_state.eq("mint"));
+                query = query
+                    .filter(thoughts::submit_state.eq("publish"))
+                    .or_filter(thoughts::submit_state.eq("mint"));
             } else {
                 query = query.filter(thoughts::submit_state.eq(submit_state));
             }
@@ -147,7 +146,9 @@ impl Thoughts {
         }
         if let Some(submit_state) = state {
             if submit_state == "publish" {
-                query = query.filter(thoughts::submit_state.eq("publish")).or_filter(thoughts::submit_state.eq("mint"));
+                query = query
+                    .filter(thoughts::submit_state.eq("publish"))
+                    .or_filter(thoughts::submit_state.eq("mint"));
             } else {
                 query = query.filter(thoughts::submit_state.eq(submit_state));
             }
@@ -224,5 +225,21 @@ impl Thoughts {
             .set(thoughts::pts.eq(pts))
             .execute(conn)
             .is_ok()
+    }
+
+    pub fn get_by_token_id_vec(
+        conn: &PgConnection,
+        token_id_vec: Vec<i32>,
+    ) -> Result<Vec<Thoughts>, Error> {
+        let mut query = all_thoughts.into_boxed();
+        let mut cnt = 0;
+        for token_id in token_id_vec {
+            cnt += 1;
+            if cnt > 10 {
+                break;
+            }
+            query = query.or_filter(thoughts::token_id.eq(token_id as i64));
+        }
+        query.get_results(conn)
     }
 }
