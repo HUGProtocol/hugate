@@ -1,9 +1,7 @@
-use diesel::expression::ops::Add;
 use rand::Rng;
-use serde::__private::de;
 
 use crate::{
-    jwt::{check_cookies, verify_login_signature},
+    jwt::check_cookies,
     models::users::{NewUser, Users},
 };
 

@@ -1,14 +1,15 @@
-use super::{
-    user::{Address, UserInfoDetail},
-    *,
-};
-use crate::{handler::*, models};
+#![allow(non_camel_case_types)]
+use super::{user::UserInfoDetail, *};
+use crate::models;
+use crate::models::{comments, likes, pass, thoughts};
 use crate::{jwt::check_cookies, models::users};
-use crate::{
-    models::{comments, likes, pass, thoughts},
-    schema::pass::token_id,
-};
 use curl::easy::Easy;
+
+use diesel::PgConnection;
+use hex_literal::hex;
+use tokio::runtime::Runtime;
+use web3::contract::{Contract, Options};
+use web3::types::U256;
 
 #[derive(FromForm)]
 #[allow(non_snake_case)]
@@ -132,7 +133,7 @@ pub fn get_popular_thoughts_list(
     }
     let (thought_db, _page_count) = res.unwrap();
     let cnt = thought_db.len();
-    let mut though_list = vec![Thought::default(); cnt];
+    let though_list = vec![Thought::default(); cnt];
     let tt = though_list
         .into_iter()
         .zip(thought_db)
@@ -267,7 +268,7 @@ pub fn get_my_thoughts_list(
     }
     let (thought_db, _page_count) = res.unwrap();
     let cnt = thought_db.len();
-    let mut though_list = vec![Thought::default(); cnt];
+    let though_list = vec![Thought::default(); cnt];
     let tt = though_list
         .into_iter()
         .zip(thought_db)
@@ -324,7 +325,7 @@ pub fn get_my_thoughts_list(
     })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct ThoughtDetail {
     pub thought_id: i32,
     pub userName: String,
@@ -671,7 +672,7 @@ pub fn reward(
         });
     }
     let role = res.unwrap();
-    let mut address = role.address.clone();
+    let address = role.address.clone();
     let res = models::users::Users::get_user_by_address(&conn, address.clone());
     if res.is_err() {
         return Json(HugResponse {
@@ -1000,6 +1001,89 @@ pub fn embededCard(req: Form<EmbededCardReq>) -> Json<HugResponse<OneLineResultB
     ))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct GetDetailByIdReq {
+    token_id: Vec<i32>,
+}
+
+#[derive(Serialize)]
+pub struct GetThoughtDetailListBody {
+    pub thoughts: Vec<ThoughtDetail>,
+}
+
+#[post("/getThoughtDetailById", data = "<req>")]
+pub fn get_detail_by_tokenid(
+    cookies: Cookies,
+    conn: DbConn,
+    req: Json<GetDetailByIdReq>,
+) -> Json<HugResponse<Option<GetThoughtDetailListBody>>> {
+    let res = check_cookies(&cookies);
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "check token failed".to_string(),
+            resultBody: None,
+        });
+    }
+    // let role = res.unwrap();
+    // let mut address = role.address.clone();
+
+    let res = thoughts::Thoughts::get_by_token_id_vec(&conn, req.token_id.clone());
+
+    if res.is_err() {
+        return Json(HugResponse {
+            resultCode: 500,
+            resultMsg: "get thought detail by id failed".to_string(),
+            resultBody: None,
+        });
+    }
+    let thought_db = res.unwrap();
+    let cnt = thought_db.len();
+    let though_list = vec![ThoughtDetail::default(); cnt];
+    let tt = though_list
+        .into_iter()
+        .zip(thought_db)
+        .map(|(mut thought_detail, t)| {
+            thought_detail.tips = t.tips.clone();
+            thought_detail.content = t.content.clone();
+            thought_detail.thought_type = t.thought_type.clone();
+            thought_detail.sourceUrl = t.source_url.clone();
+            thought_detail.snapshot = t.snapshot.clone();
+            thought_detail.likeNum = t.likes;
+            thought_detail.thought_id = t.id;
+            thought_detail.html = t.html.clone();
+            thought_detail.pts = t.pts;
+            thought_detail.embeded = t.embeded.clone();
+            thought_detail.create_time = t.create_at.timestamp();
+            thought_detail.html_backup = t.html_backup.clone();
+            thought_detail.viewed = t.viewed.clone();
+            thought_detail.thought_nft_id = t.token_id;
+
+            let res = users::Users::get_user_by_address(&conn, t.address.clone());
+            if res.is_ok() {
+                if let Some(u) = res.unwrap().get(0) {
+                    thought_detail.userName = u.username.clone();
+                    thought_detail.avatar = u.profile_image.clone();
+                    thought_detail.userInfo = u.clone();
+                }
+            }
+            let res = comments::Comment::get_count_by_thought_id(&conn, t.id);
+            if let Err(e) = res {
+                println!("{}", e);
+            } else {
+                thought_detail.commentNum = res.unwrap() as i32;
+            }
+            thought_detail
+        })
+        .collect::<Vec<ThoughtDetail>>();
+
+    Json(HugResponse {
+        resultCode: 200,
+        resultMsg: "success".to_string(),
+        resultBody: Some(GetThoughtDetailListBody { thoughts: tt }),
+    })
+}
+
 pub fn curl_twitter(url: String) -> Option<Vec<u8>> {
     let mut embeded_url = r#"https://publish.twitter.com/oembed?url="#.to_string();
     embeded_url += &url;
@@ -1026,11 +1110,6 @@ pub fn curl_twitter(url: String) -> Option<Vec<u8>> {
     Some(dst)
 }
 
-use diesel::PgConnection;
-use hex_literal::hex;
-use tokio::runtime::Runtime;
-use web3::contract::{tokens::Tokenizable, Contract, Options};
-use web3::types::U256;
 pub fn check_pass_balance(address: String, pass_token_id: i32) -> Option<u32> {
     let http_url = "https://avalanche-fuji.infura.io/v3/ce421f619bc34c37a0fb86075d41226f";
     let http = web3::transports::Http::new(http_url).ok()?;

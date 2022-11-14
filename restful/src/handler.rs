@@ -5,17 +5,13 @@ pub mod metadata;
 pub mod thoughts;
 pub mod user;
 
-use std::string;
-
 use super::db::Conn as DbConn;
-use crate::jwt::UserRolesToken;
-use jsonwebtoken::Algorithm;
+
 use rocket::http::{Cookie, Cookies};
 use rocket::request::{Form, LenientForm};
 use rocket::Request;
 use rocket_contrib::json::Json;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]

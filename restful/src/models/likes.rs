@@ -1,10 +1,5 @@
-use super::pagination::Paginate;
-use crate::handler::user::UserInfoAbstract;
-use crate::schema::follow::dsl::follow as all_follows;
+use crate::schema::likes;
 use crate::schema::likes::dsl::likes as all_likes;
-use crate::schema::thoughts::dsl::thoughts as all_thoughts;
-use crate::schema::users::dsl::users as all_users;
-use crate::schema::{self, follow, likes, thoughts, users};
 use chrono::NaiveDateTime;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;

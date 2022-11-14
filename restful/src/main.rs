@@ -16,16 +16,11 @@ extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
 extern crate serde_json;
-use rocket::http::Method;
-use rocket_cors::{AllowedHeaders, AllowedMethods, AllowedOrigins, Cors};
+use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors};
 
 use dotenv::dotenv;
-use handler::comments::{
-    static_rocket_route_info_for_del_comment, static_rocket_route_info_for_get_thought_comments,
-    static_rocket_route_info_for_thoughts_comment,
-};
+
 use handler::*;
 use std::env;
 use std::process::Command;
@@ -83,8 +78,10 @@ fn rocket() -> rocket::Rocket {
                 thoughts::getPassThoughtId,
                 thoughts::getPassTokenId,
                 thoughts::changeThoughtState,
+                thoughts::get_detail_by_tokenid,
                 metadata::get_metadata_by_address,
                 metadata::createMetadata,
+                metadata::get_pass_metadata_by_id,
             ],
         )
         .attach(get_cors())

@@ -1,5 +1,4 @@
-use crate::schema::users::username;
-
+#![allow(non_camel_case_types)]
 use super::{
     user::{Address, UserName},
     *,
@@ -31,10 +30,10 @@ impl medalListBody {
     }
 }
 
-#[get("/getMedalList?<currentPage>&<pageSize>")]
+#[get("/getMedalList?<_currentPage>&<pageSize>")]
 pub fn get_medal_list(
-    db_conn: DbConn,
-    currentPage: Option<i32>,
+    _db_conn: DbConn,
+    _currentPage: Option<i32>,
     pageSize: Option<i32>,
 ) -> Json<HugResponse<medalListBody>> {
     let num = pageSize.unwrap_or(5);
