@@ -1,4 +1,5 @@
 use super::pagination::Paginate;
+use super::ReplaceIPFSUrl;
 use crate::schema::thoughts::dsl::thoughts as all_thoughts;
 use crate::schema::thoughts::likes;
 use crate::schema::{likes as likes_table, thoughts};
@@ -80,7 +81,15 @@ impl Thoughts {
         query = query.filter(not(thoughts::viewed.eq("self")));
         query = query.filter(not(thoughts::submit_state.eq("save")));
         let query_page = query.paginate(page).per_page(per_page);
-        query_page.load_and_count_pages(conn)
+        let mut res: Result<(Vec<Thoughts>, i64), Error> = query_page.load_and_count_pages(conn);
+        if let Ok((ref mut r, _)) = res {
+            for t in r {
+                t.snapshot = ReplaceIPFSUrl(t.snapshot.clone());
+                t.html = ReplaceIPFSUrl(t.html.clone());
+                t.html_backup = ReplaceIPFSUrl(t.html_backup.clone());
+            }
+        }
+        res
     }
 
     pub fn get_my_like(
@@ -125,7 +134,15 @@ impl Thoughts {
             query = query.filter(thoughts::thought_type.eq(thought_type));
         }
         let query_page = query.paginate(page).per_page(per_page);
-        query_page.load_and_count_pages(conn)
+        let mut res: Result<(Vec<Thoughts>, i64), Error> = query_page.load_and_count_pages(conn);
+        if let Ok((ref mut res, _)) = res {
+            for t in res {
+                t.snapshot = ReplaceIPFSUrl(t.snapshot.clone());
+                t.html = ReplaceIPFSUrl(t.html.clone());
+                t.html_backup = ReplaceIPFSUrl(t.html_backup.clone());
+            }
+        }
+        res
     }
 
     pub fn get_my(
@@ -155,14 +172,30 @@ impl Thoughts {
         }
         query = query.filter(thoughts::address.eq(address));
         let query_page = query.paginate(page).per_page(per_page);
-        query_page.load_and_count_pages(conn)
+        let mut res: Result<(Vec<Thoughts>, i64), Error> = query_page.load_and_count_pages(conn);
+        if let Ok((ref mut res, _)) = res {
+            for t in res {
+                t.snapshot = ReplaceIPFSUrl(t.snapshot.clone());
+                t.html = ReplaceIPFSUrl(t.html.clone());
+                t.html_backup = ReplaceIPFSUrl(t.html_backup.clone());
+            }
+        }
+        res
     }
 
     pub fn get_by_id(conn: &PgConnection, id: i32) -> Result<Vec<Thoughts>, Error> {
-        all_thoughts
+        let mut res: Result<Vec<Thoughts>, Error> = all_thoughts
             .filter(thoughts::id.eq(id))
             .distinct()
-            .load(conn)
+            .load(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.snapshot = ReplaceIPFSUrl(t.snapshot.clone());
+                t.html = ReplaceIPFSUrl(t.html.clone());
+                t.html_backup = ReplaceIPFSUrl(t.html_backup.clone());
+            }
+        }
+        res
     }
 
     pub fn create(conn: &PgConnection, new_thought: NewThought) -> Result<i32, Error> {
@@ -240,6 +273,14 @@ impl Thoughts {
             }
             query = query.or_filter(thoughts::token_id.eq(token_id as i64));
         }
-        query.get_results(conn)
+        let mut res: Result<Vec<Thoughts>, Error> = query.get_results(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.snapshot = ReplaceIPFSUrl(t.snapshot.clone());
+                t.html = ReplaceIPFSUrl(t.html.clone());
+                t.html_backup = ReplaceIPFSUrl(t.html_backup.clone());
+            }
+        }
+        res
     }
 }

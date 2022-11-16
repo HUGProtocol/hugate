@@ -7,6 +7,8 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error;
 
+use super::ReplaceIPFSUrl;
+
 #[derive(Debug, Queryable, Serialize, Default, Clone)]
 pub struct Users {
     pub id: i32,
@@ -46,7 +48,15 @@ pub struct NewFollow {
 
 impl Users {
     pub fn get_all_users(conn: &PgConnection) -> Result<Vec<Users>, Error> {
-        all_users.order(users::id.desc()).load::<Users>(conn)
+        let mut res: Result<Vec<Users>, Error> =
+            all_users.order(users::id.desc()).load::<Users>(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.profile_image = ReplaceIPFSUrl(t.profile_image.clone());
+                t.banner = ReplaceIPFSUrl(t.banner.clone());
+            }
+        }
+        res
     }
 
     pub fn insert_or_update_user(user: NewUser, conn: &PgConnection) -> bool {
@@ -67,10 +77,17 @@ impl Users {
     }
 
     pub fn get_user_by_address(conn: &PgConnection, addr: String) -> Result<Vec<Users>, Error> {
-        all_users
+        let mut res: Result<Vec<Users>, Error> = all_users
             .filter(schema::users::dsl::address.eq(addr))
             .distinct()
-            .load::<Users>(conn)
+            .load::<Users>(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.profile_image = ReplaceIPFSUrl(t.profile_image.clone());
+                t.banner = ReplaceIPFSUrl(t.banner.clone());
+            }
+        }
+        res
     }
 
     pub fn get_user_by_followee(
@@ -78,10 +95,16 @@ impl Users {
         addr: String,
     ) -> Result<Vec<UserInfoAbstract>, Error> {
         let joined = users::table.left_join(follow::table.on(follow::follower.eq(users::address)));
-        joined
+        let mut res: Result<Vec<UserInfoAbstract>, Error> = joined
             .filter(follow::followee.eq(addr))
             .select((users::address, users::username, users::profile_image))
-            .load::<UserInfoAbstract>(conn)
+            .load::<UserInfoAbstract>(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.profile_image = ReplaceIPFSUrl(t.profile_image.clone());
+            }
+        }
+        res
     }
 
     pub fn follow(new_follow: NewFollow, conn: &PgConnection) -> bool {
@@ -144,10 +167,16 @@ impl Users {
         addr: String,
     ) -> Result<Vec<UserInfoAbstract>, Error> {
         let joined = users::table.left_join(follow::table.on(follow::follower.eq(users::address)));
-        joined
+        let mut res: Result<Vec<UserInfoAbstract>, Error> = joined
             .filter(follow::followee.eq(addr))
             .select((users::address, users::username, users::profile_image))
-            .load::<UserInfoAbstract>(conn)
+            .load::<UserInfoAbstract>(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.profile_image = ReplaceIPFSUrl(t.profile_image.clone());
+            }
+        }
+        res
     }
 
     //followees
@@ -156,10 +185,16 @@ impl Users {
         addr: String,
     ) -> Result<Vec<UserInfoAbstract>, Error> {
         let joined = users::table.left_join(follow::table.on(follow::followee.eq(users::address)));
-        joined
+        let mut res: Result<Vec<UserInfoAbstract>, Error> = joined
             .filter(follow::follower.eq(addr))
             .select((users::address, users::username, users::profile_image))
-            .load::<UserInfoAbstract>(conn)
+            .load::<UserInfoAbstract>(conn);
+        if let Ok(ref mut res) = res {
+            for t in res {
+                t.profile_image = ReplaceIPFSUrl(t.profile_image.clone());
+            }
+        }
+        res
     }
 
     pub fn get_following_count(conn: &PgConnection, addr: String) -> Result<i64, Error> {
