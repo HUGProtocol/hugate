@@ -75,7 +75,7 @@ async function checkPass() {
     console.log(singlePassInfo);
 }
 
-update()
+deploy()
     .then(() => process.exit(0))
     .catch((error) => {
         console.error(error);
