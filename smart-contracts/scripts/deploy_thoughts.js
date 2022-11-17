@@ -86,7 +86,7 @@ async function buy() {
     console.log("token 0", collectionInfo);
 }
 
-update()
+deploy()
     .then(() => process.exit(0))
     .catch((error) => {
         console.error(error);
