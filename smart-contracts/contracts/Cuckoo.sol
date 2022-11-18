@@ -211,13 +211,13 @@ contract Cuckoo is
         public
     // onlyChannelOwner(tokenId)
     {
-        ChannelBasic memory basic = ChannelInfo[tokenId];
-        if (msg.sender == basic.owner) {
-            uint256 balance = ERC1155Upgradeable.balanceOf(msg.sender, tokenId);
-            if (balance < addressList.length) {
-                _mint(msg.sender, tokenId, addressList.length - balance, "");
-            }
-        }
+        // ChannelBasic memory basic = ChannelInfo[tokenId];
+        // if (msg.sender == basic.owner) {
+        //     uint256 balance = ERC1155Upgradeable.balanceOf(msg.sender, tokenId);
+        //     if (balance < addressList.length) {
+        //         _mint(msg.sender, tokenId, addressList.length - balance, "");
+        //     }
+        // }
         require(addressList.length < 10, "receiver expand");
         for (uint256 i = 0; i < addressList.length; ++i) {
             address receiver = addressList[i];

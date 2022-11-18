@@ -17,6 +17,7 @@ pub struct CreateProfileReq {
     pub twitter: String,
     pub about: String,
     pub banner: Option<String>,
+    pub twitter_auth: Option<String>,
 }
 
 #[post("/createProfile", data = "<create_profile>")]
@@ -25,6 +26,9 @@ pub fn create_profile(
     conn: DbConn,
     create_profile: LenientForm<CreateProfileReq>,
 ) -> Json<HugResponse<OneLineResultBody>> {
+    if let Some(auth) = create_profile.twitter_auth.clone() {
+        println!("{}", auth);
+    }
     let res = check_cookies(&cookies);
     if res.is_err() {
         return Json(HugResponse::new_failed("check token failed", ""));
