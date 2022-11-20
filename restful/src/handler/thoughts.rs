@@ -1027,7 +1027,13 @@ pub fn get_detail_by_tokenid(
     }
     // let role = res.unwrap();
     // let mut address = role.address.clone();
-
+    if req.token_id.len() == 0 {
+        return Json(HugResponse {
+            resultCode: 200,
+            resultMsg: "".to_string(),
+            resultBody: None,
+        });
+    }
     let res = thoughts::Thoughts::get_by_token_id_vec(&conn, req.token_id.clone());
 
     if res.is_err() {
