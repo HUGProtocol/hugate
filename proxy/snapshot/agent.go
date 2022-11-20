@@ -190,7 +190,7 @@ func (agent *HeadlessAgent) ShotOne(direction string, pic_filename, text_filenam
 		direction: direction,
 		resp:      make(chan error, 1),
 	}
-	ticker := time.NewTicker(time.Minute * 5)
+	ticker := time.NewTicker(time.Second * 10)
 	select {
 	case agent.pending <- req:
 		fmt.Println(11)
